@@ -1,0 +1,1364 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Barangay {{ BARANGAY_NAME|default:'[Your Barangay Name]' }} System</title>
+    {% include 'residents/html/header.html' %}
+    <style>
+        /* ... (All your existing CSS styles remain the same as the previous version) ... */
+        /* General Styles */
+        #transactions-container { padding: 20px; border: 1px solid #ddd; margin-top: 20px; background-color: #fff; border-radius: 5px; }
+        .transaction-section h3 { border-bottom: 2px solid #6c757d; padding-bottom: 5px; margin-bottom: 15px; color: #333; }
+        .transaction-options button { margin-right: 10px; margin-bottom: 10px; padding: 10px 15px; cursor: pointer; background-color: #28a745; color: white; border: none; border-radius: 4px; font-size: 1em; transition: background-color 0.3s ease; }
+        .transaction-options button:hover { background-color: #218838; }
+
+        /* Form Styles */
+        .request-form { padding: 25px; border: 1px solid #ccc; margin-top: 20px; background-color: #f9f9f9; border-radius: 5px; }
+        .request-form h4 { margin-top: 0; color: #333; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; }
+        .request-form div:not(.resident-search-container):not(.transaction-options) { margin-bottom: 15px; } /* Adjusted for hidden fields */
+        .request-form label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        .request-form input[type="text"], .request-form input[type="date"], .request-form input[type="time"], .request-form input[type="number"], .request-form textarea, .request-form select { width: calc(100% - 22px); padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 1em; }
+        .request-form textarea { height: 80px; resize: vertical; }
+        .request-form button[type="submit"], .save-transaction-btn {padding: 12px 25px;background-color: #007bff; color: white;border: none; border-radius: 4px; cursor: pointer; font-size: 1em; margin-top: 10px; display: inline-block; }
+        .request-form button[type="submit"]:hover, .save-transaction-btn:hover { background-color: #0056b3; }
+        .request-form input[readonly], .request-form select[disabled] { background-color: #e9ecef; cursor: not-allowed; }
+        .request-form hr.form-field-hidden { margin: 0; border: 0; } /* Hide HR if it's marked */
+
+        .form-field-hidden { display: none !important; } /* For hiding form fields */
+
+        /* Search Styles */
+        .resident-search-container { position: relative; margin-bottom: 20px; border-bottom: 1px dashed #ccc; padding-bottom: 20px; }
+        .resident-search-container label { font-weight: bold; display: block; margin-bottom: 5px; }
+        .resident-search-container input[type="search"] { width: calc(100% - 100px); padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 1em; margin-right: 5px; }
+        .resident-search-container button { padding: 10px 15px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .search-results-list { position: absolute; background-color: white; border: 1px solid #ddd; width: calc(100% - 102px); max-height: 200px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 8px rgba(0,0,0,0.1); list-style: none; padding: 0; margin: 0; }
+        .search-results-list .result-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; }
+        .search-results-list .result-item:last-child { border-bottom: none; }
+        .search-results-list .result-item:hover { background-color: #f0f0f0; }
+        .search-results-list .loading-item, .search-results-list .error-item { padding: 10px; font-style: italic; color: #666; }
+
+        /* Document View Styles */
+        .document-view { margin-top: 30px; padding: 20px; border: 2px dotted #007bff; background-color: #ffffff; }
+        .document-view h3 { text-align: center; margin-bottom: 10px; color: #000000; }
+        .print-doc-btn { display: block; margin: 0 auto 20px auto; padding: 10px 20px; background-color: #17a2b8; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .print-doc-btn:hover { background-color: #138496; }
+        .document-paper { border: 2px solid black; padding: 50px; width: 700px; margin: 20px auto; font-family: 'Times New Roman', serif; background-color: rgb(255, 255, 255); position: relative; box-shadow: 0 0 15px rgba(0,0,0,0.3); }
+        .certificate-header { text-align: center; margin:0; }
+        .certificate-header p{font-size:14px; font-variant:small-caps; font-weight: bold; line-height: 1.2em;text-align: center; margin: 0;}
+        .certificate-header img { width: 120px; height: 120px; position: absolute; }
+        .certificate-header .logo-left { left: 80px; top: 20px; }
+        .certificate-header .logo-right { right: 80px; top: 20px; }
+        .certificate-header h4{ margin: 0; font-size: 1em; line-height: 1.2em; font-variant: small-caps; font-weight: bold;}
+        .certificate-header hr { margin: 20px 0 5px 0; border-top: 1px solid rgb(100, 100, 100); padding: 0;}
+        .certificate-header h2.office-text { margin: 10px 0; font-weight: bold; color: #333; font-size: 1.2em; font-variant: small-caps;}
+        
+        .certificate-body {background-color: rgb(255, 255, 255); margin: 0;}
+        .clearance_body .leftnav .pos{ margin: 0 0 15px 0; font-size:1em; color:rgb(38, 134, 243); font-weight: bold;}
+        .certificate-title { text-align: center; margin: 30px 0 50px 0; font-size: 1.8em; letter-spacing: 1px; font-weight: bold; font-family: Arial, Helvetica, sans-serif;}
+        .certificate-body h4 { margin-bottom: 15px; font-weight: normal; text-align: left; }
+        .certificate-body p { font-size: 16px; line-height: 1.6em; text-align: justify; margin-bottom: 20px; text-indent: 40px;}
+        .certificate-body .placeholder { color: #555; font-style: italic; text-transform: none !important; border-bottom: 1px dashed #999; }
+        
+        /* UPDATED CSS RULES FOR EDITABLE PREVIEW FIELDS */
+        .document-paper .editable-in-preview { border-bottom: 1px dashed #777 !important; } /* Default style for editable */
+        .document-paper .editable-in-preview:hover { background-color: #eef !important; cursor: pointer !important; border-bottom: 1px solid #007bff !important; }
+        
+        .certificate-footer {background-color: rgb(255, 255, 255);}
+        .certificate-footer .signature { float: right; width:; text-align: center; margin-top: 8px; }
+        .signature strong.pbSignatureName {display: block; margin:0; border-top: 1px solid black; padding: 0;}
+        .certificate-footer::after { content: ""; display: table; clear: both; }
+
+        
+        .certificate-payment-detail {margin-top: 60px; background-color: rgb(255, 255, 255);}
+        .certificate-payment-detail p {margin: 0; padding: 0; line-height: 1.6em; font-size: 12px; text-indent:0;} /* Adjusted line-height and font-size for payment details */
+        .certificate-payment-detail p span {font-weight:normal;} /* Ensure spans in payment details are not bolded by default from other strong tags */
+
+
+        .hidden { display: none; }
+        
+
+        @media print {
+            body * { visibility: hidden; font-size: 11pt !important; line-height: 1.2 !important;}
+            .certificate-header {font-size: 12pt !important; line-height: .5em !important;}
+            .print-area, .print-area * { visibility: visible; }
+            .print-area { position: absolute; left: 0; top: 0; width: 100%; height: auto; margin: 0; padding: 5px !important; border: none !important; box-shadow: none !important; }
+            .print-area .certificate-header img { width: 100px !important; height: 100px !important; }
+            .print-area .certificate-header .logo-left { left: 20px !important; top: 0px !important; }
+            .print-area .certificate-header .logo-right { right: 20px !important; top: 0px !important; }
+            .print-area .certificate-body strong.dynamic-data, .print-area span.dynamic-data { color: #000 !important; }
+            .print-area .placeholder { border-bottom: none !important; font-style: normal; color: #000; }
+            .print-area .editable-in-preview { border-bottom: none !important; } /* Remove border for print */
+            .print-area .editable-in-preview:hover { background-color: transparent !important; cursor: default !important; } /* Remove hover for print */
+            .document-view h3, .print-doc-btn, .request-form, #transactions-container h3, .transaction-options, .container > h1, .header, .hidden, .save-transaction-btn { display: none !important; }
+            .document-paper { border: none !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; width: 100% !important; font-size: 12pt; }
+            .certificate-title { font-size: 1.8em !important;}
+            .certificate-body p { font-size: 12pt !important; line-height: 1.2em !important; }
+            .certificate-body .leftnav { font-size: 12pt !important; line-height: 1.2em !important; }
+            .print-area .clearance_body .leftnav p {font-size: 10pt !important;}
+            .print-area .clearance_body .leftnav .pos {color: #007bff !important; 
+    }
+            .certificate-payment-detail p {font-size: 10pt !important; line-height: 1.2em !important;}
+            .certificate-payment-detail p span {text-decoration: underline; text-underline-offset: 2px;}
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% include 'residents/html/header_nav_bar.html' %}
+        <div class="content">
+            <h1>Transactions</h1>
+            <div id="transactions-container">
+
+                <div class="transaction-section transaction-options">
+                    <h3>Start a New Transaction:</h3>
+                    <button class="transaction-btn" data-form="brgy-clearance-request-form" data-doc="brgy-clearance-document-view">Request Barangay Clearance</button>
+                    <button class="transaction-btn" data-form="brgy-residency-request-form" data-doc="brgy-residency-document-view">Request Certificate of Residency</button>
+                    <button class="transaction-btn" data-form="brgy-indigency-request-form" data-doc="brgy-indigency-document-view">Request Certificate of Indigency</button>
+                    <button class="transaction-btn" data-form="brgy-blotter-request-form">File a Complaint/Blotter</button>
+                </div>
+
+                <div id="brgy-clearance-request-form" class="request-form hidden">
+                    <h4>Barangay Clearance Data (Edit in Preview)</h4>
+                    <div class="resident-search-container">
+                        <label for="cl_resident_search">Search & Select Resident:</label>
+                        <input type="search" id="cl_resident_search" class="resident-search-input" placeholder="Start typing resident's name...">
+                        <button type="button" class="clear-resident-btn">Clear</button>
+                        <div class="search-results-list"></div>
+                    </div>
+                    <form id="clearanceFormActual" action="#" method="post"> {% csrf_token %}
+                        <input type="hidden" id="cl_resident_id" name="resident_id">
+                        <input type="hidden" id="cl_gender" name="gender_hidden"> 
+                        
+                        <div class="form-field-hidden"><label for="cl_full_name">Full Name:</label><input type="text" id="cl_full_name" name="full_name"></div>
+                        <div class="form-field-hidden"><label for="cl_purok">Purok:</label><input type="text" id="cl_purok" name="purok"></div>
+                        <div class="form-field-hidden"><label for="cl_address">Complete Address:</label><input type="text" id="cl_address" name="address"></div>
+                        <div class="form-field-hidden"><label for="cl_birthdate">Date of Birth:</label><input type="date" id="cl_birthdate" name="birthdate"></div>
+                        <div class="form-field-hidden"><label for="cl_civil_status">Civil Status:</label><select id="cl_civil_status" name="civil_status"><option value="">-- Select --</option><option value="SINGLE">Single</option><option value="MARRIED">Married</option><option value="WIDOWED">Widowed</option><option value="DIVORCED">Divorced</option><option value="SEPARATED">Separated</option><option value="ANNULLED">Annulled</option><option value="COMMON-LAW / LIVE-IN PARTNER">Common-law / Live-in Partner</option></select></div>
+                        <hr class="form-field-hidden">
+                        <div class=""><label for="cl_purpose">Purpose:</label><input type="text" id="cl_purpose" name="purpose" placeholder="Start with His/Her"></div>
+                        <div class="form-field-hidden"><label for="cl_cedula_no">Cedula No.:</label><input type="text" id="cl_cedula_no" name="cedula_details"></div>
+                        <div class="form-field-hidden"><label for="cl_date_issued">Cedula Date Issued:</label><input type="date" id="cl_date_issued" name="date_issued_on_cert"></div>
+                        <div class="form-field-hidden"><label for="cl_certificate_issue_date">Certificate Issue Date:</label><input type="date" id="cl_certificate_issue_date" name="certificate_issue_date_on_cert"></div>
+                        
+                        <hr class="form-field-hidden"> 
+                        <div class="form-field-hidden"><label for="cl_or_no">O.R. No.:</label><input type="text" id="cl_or_no" name="or_no"></div>
+                        <div class="form-field-hidden"><label for="cl_amount_paid">Amount Paid:</label><input type="text" id="cl_amount_paid" name="amount_paid"></div>
+                        <div class="form-field-hidden"><label for="cl_cert_fee">Certificate Fee:</label><input type="text" id="cl_cert_fee" name="cert_fee"></div>
+                        <div class="form-field-hidden"><label for="cl_doc_stamp">Documentary Stamp:</label><input type="text" id="cl_doc_stamp" name="doc_stamp"></div>
+                        <div class="form-field-hidden"><label for="cl_payment_date_issued">Payment Date Issued:</label><input type="date" id="cl_payment_date_issued" name="payment_date_issued"></div>
+
+                        <button type="submit" class="save-transaction-btn">Save Transaction</button>
+                    </form>
+                </div>
+
+                <div id="brgy-residency-request-form" class="request-form hidden">
+                    <h4>Certificate of Residency Request Form</h4>
+                        <div class="resident-search-container">
+                            <label for="res_resident_search">Search & Select Resident:</label>
+                            <input type="search" id="res_resident_search" class="resident-search-input" placeholder="Start typing resident's name...">
+                            <button type="button" class="clear-resident-btn">Clear</button>
+                            <div class="search-results-list"></div>
+                        </div>
+                    <form action="#" method="post"> {% csrf_token %}
+                        <input type="hidden" id="res_resident_id" name="resident_id">
+                    <div><label for="res_full_name">Full Name:</label><input type="text" id="res_full_name" name="full_name" readonly></div>
+                    <div><label for="res_address">Complete Address:</label><input type="text" id="res_address" name="address" readonly></div>
+                        <hr>
+                    <div><label for="res_length">Length of Residency (in years):</label><input type="number" id="res_length" name="length_of_residency" required></div>
+                    <div><label for="res_purpose">Purpose:</label><input type="text" id="res_purpose" name="purpose" required></div>
+                    <button type="submit" class="save-transaction-btn">Save Transaction</button>
+                    </form>
+                </div>
+                <div id="brgy-indigency-request-form" class="request-form hidden">
+                    <h4>Certificate of Indigency Request Form</h4>
+                    <div class="resident-search-container">
+                        <label for="ind_resident_search">Search & Select Resident:</label>
+                        <input type="search" id="ind_resident_search" class="resident-search-input" placeholder="Start typing resident's name...">
+                        <button type="button" class="clear-resident-btn">Clear</button>
+                        <div class="search-results-list"></div>
+                    </div>
+                    <form action="#" method="post"> {% csrf_token %}
+                        <input type="hidden" id="ind_resident_id" name="resident_id">
+                        <div><label for="ind_full_name">Full Name:</label><input type="text" id="ind_full_name" name="full_name" readonly></div>
+                        <div><label for="ind_address">Complete Address:</label><input type="text" id="ind_address" name="address" readonly></div>
+                        <hr>
+                        <div><label for="ind_purpose">Purpose:</label><input type="text" id="ind_purpose" name="purpose" required></div>
+                        <div><label for="ind_details">Brief Statement (Optional):</label><textarea id="ind_details" name="details"></textarea></div>
+                        <button type="submit" class="save-transaction-btn">Save Transaction</button>
+                    </form>
+                </div>
+                <div id="brgy-blotter-request-form" class="request-form hidden">
+                    <h4>File a Complaint / Blotter Entry</h4>
+                    <form action="#" method="post"> {% csrf_token %}
+                        <div><label for="blot_complainant_details">Your Full Name & Address (Complainant):</label><textarea id="blot_complainant_details" name="complainant_details" required placeholder="Juan Dela Cruz - Purok 1, Brgy. Biaknabato"></textarea></div>
+                        <hr>
+                        <div class="resident-search-container">
+                            <label for="blot_resident_search">Search Respondent (if barangay resident):</label>
+                            <input type="search" id="blot_resident_search" class="resident-search-input" placeholder="Start typing respondent's name...">
+                            <button type="button" class="clear-resident-btn">Clear</button>
+                            <div class="search-results-list"></div>
+                        </div>
+                        <div><label for="blot_respondent">Name of Person(s) Complained Against:</label><input type="text" id="blot_respondent" name="respondent_name" required></div>
+                        <div><label for="blot_respondent_address">Respondent's Address (if known, or if not a resident):</label><input type="text" id="blot_respondent_address" name="respondent_address"></div>
+                        <hr>
+                        <div><label for="blot_incident_details_combined">Incident Details (Narrative, Date, Time, Place):</label><textarea id="blot_incident_details_combined" name="incident_details" required placeholder="Narrate the incident including date, time, and place. e.g., On June 1, 2025, around 3 PM at the barangay plaza, Mr. X did..." style="height: 120px;"></textarea></div>
+                        <button type="submit" class="save-transaction-btn">File Complaint</button>
+                    </form>
+                </div>
+
+
+
+
+
+
+
+                <div id="brgy-clearance-document-view" class="document-view hidden">
+                    <h3>Barangay Clearance</h3>
+                    <button class="print-doc-btn">Print Document</button>
+                    <div class="document-paper">
+                        {% include 'residents/html/certificate-header.html' %} 
+                        <div class="clearance_body" style="display: flex; margin-top: 20px;">
+
+                            <div class="leftnav" style="border-right:1px solid rgb(179, 176, 176); width: 30%; padding: 10px 15px 10px 0; font-size: 0.85em; line-height:1.5; font-variant: small-caps; font-size:12px;">
+                                <p class="officials-title" style="font-variant: small-caps; font-weight:bold;">BARANGAY OFFICIALS</p>
+
+                                <p id="leftnav_pb_name" style="margin:0; text-decoration: underline; text-underline-offset: 2px; font-weight:bold;" >[Punong Barangay Name]</p>
+                                <p class="pos">Punong Barangay</p>
+
+                                <div id="leftnav_kagawads_container">
+                                    </div>
+
+                                <p id="leftnav_sk_name" style="margin: 0; text-decoration: underline; text-underline-offset: 2px; font-weight:bold;">[SK Chairwoman Name]</p>
+                                <p class="pos">SK Chairwoman</p>
+
+                                <p id="leftnav_tres_name" style="margin:0; text-decoration: underline; text-underline-offset: 2px; font-weight:bold;">[Treasurer Name]</p>
+                                <p class="pos">Treasurer</p>
+
+                                <p id="leftnav_sec_name" style="margin:0; text-decoration: underline; text-underline-offset: 2px; font-weight:bold;">[Secretary Name]</p>
+                                <p class="pos">Secretary</p>
+                            </div>
+
+                            <div class="rightnav" style="width: 70%; margin: 0; padding: 0 0 0 20px;">
+                                <br>
+                                <p class="certificate-title" style="font-size: 1.2em; margin: 10px 0 30px 0;">BARANGAY CLEARANCE</p>
+                                <div class="certificate-body">
+                                    <h4>To Whom It May Concern:</h4>
+                                    <p>This is to certify that <span id="doc_cl_name" class="dynamic-data placeholder">[Full Name]</span>, 
+                                    Filipino, of legal age, <span id="doc_cl_civil_status" class="dynamic-data placeholder">[Civil Status]</span>, 
+                                    a bona fide resident of Sitio <span id="doc_cl_purok_val" class="dynamic-data placeholder">[Purok]</span>, 
+                                    <span id="doc_cl_address" class="dynamic-data placeholder">[Resident's Barangay Address]</span>, 
+                                    with Residence Certificate Number <span id="doc_cl_cedula_val" class="dynamic-data placeholder">[Cedula No.]</span> 
+                                    issued at Barangay {{ BARANGAY_NAME|default:'[Your Barangay Name]' }}, {{ MUNICIPALITY_NAME|default:'[Your Municipality Name]' }}, {{ PROVINCE_NAME|default:'[Your Province Name]' }} on 
+                                    <span id="doc_cl_cedula_month" class="dynamic-data placeholder">[Month]</span> 
+                                    <span id="doc_cl_cedula_day" class="dynamic-data placeholder">[Day]</span>, 
+                                    <span id="doc_cl_cedula_year" class="dynamic-data placeholder">[Year]</span>.</p>
+                                    <p>THIS FURTHER CERTIFIES that <span id="doc_cl_pronoun_subject" class="dynamic-data placeholder">[he/she]</span> is known to me as a person of good moral character, a law-abiding citizen, and has never violated any law, ordinance or rule duly implemented by the government authorities.</p>
+                                    <p>This Barangay Clearance is issued upon the request of the above-named person for the purpose of <span id="doc_cl_pronoun_possessive" class="dynamic-data placeholder" hidden>[his/her]</span> <span id="doc_cl_purpose" class="dynamic-data placeholder">[Purpose]</span>.</p>
+                                    <p>Given this <span id="doc_cl_day" class="dynamic-data placeholder">[Day]</span> day of <span id="doc_cl_month" class="dynamic-data placeholder">[Month]</span>, <span id="doc_cl_year" class="dynamic-data placeholder">[Year]</span> at Barangay {{ BARANGAY_NAME|default:'[Your Barangay Name]' }}, {{ MUNICIPALITY_NAME|default:'[Your Municipality Name]' }}, {{ PROVINCE_NAME|default:'[Your Province Name]' }}, Philippines.</p>
+                                </div>
+                                <div class="certificate-footer" style="margin-top: 80px;">
+                                    <div class="signature">
+                                        <strong id="pbSignatureName" class="pbSignatureName">[Punong Barangay Name]</strong>
+                                        Punong Barangay
+                                    </div>
+                                </div>
+                                <div class="certificate-payment-detail">
+                                    <p>O.R. No.: <span id="doc_cl_or_no" class="dynamic-data placeholder">[OR No.]</span></p>
+                                    <p>Amount Paid: <span id="doc_cl_amount_paid" class="dynamic-data placeholder">[Amount Paid]</span></p>
+                                    <p>Cert. Fee: <span id="doc_cl_cert_fee" class="dynamic-data placeholder">[Cert. Fee]</span></p>
+                                    <p>Doc. Stamp: <span id="doc_cl_doc_stamp" class="dynamic-data placeholder">[Doc. Stamp]</span></p>
+                                    <p>Date Issued:
+                                        <span id="doc_cl_payment_date_issued_month" class="dynamic-data placeholder">[Month]</span>
+                                        <span id="doc_cl_payment_date_issued_day" class="dynamic-data placeholder">[Day]</span>,
+                                        <span id="doc_cl_payment_date_issued_year" class="dynamic-data placeholder">[Year]</span>
+                                    </p>
+                                    <p>Place Issued: <span style="text-decoration: underline;">Barangay {{ BARANGAY_NAME|default:'[Your Barangay Name]' }}</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="brgy-residency-document-view" class="document-view hidden">
+                    <h3>Certificate of Residency</h3>
+                    <button class="print-doc-btn">Print Document</button>
+                    <div class="document-paper">
+                        {% include 'residents/html/certificate-header.html' %}
+                        <h1 class="certificate-title" style="font-size: 1.8em; margin: 30px 0;">CERTIFICATE OF RESIDENCY</h1>
+                        <div class="certificate-body">
+                            <h4 style="font-weight: bold; margin-bottom: 20px;">TO WHOM IT MAY CONCERN:</h4>
+                            <p>This is to certify that <strong id="doc_res_name" class="dynamic-data placeholder">[Full Name]</strong>, of legal age, Filipino citizen, is a bona fide resident of <strong id="doc_res_address" class="dynamic-data placeholder">[Address]</strong>, {{ BARANGAY_NAME|default:'[Your Barangay Name]' }}, {{ MUNICIPALITY_NAME|default:'[Your Municipality Name]' }}, {{ PROVINCE_NAME|default:'[Your Province Name]' }} for <strong id="doc_res_length" class="dynamic-data placeholder">[Length]</strong> years.</p>
+                            <p>This certification is issued upon the request of the above-named person for the purpose of <strong id="doc_res_purpose" class="dynamic-data placeholder">[Purpose]</strong>.</p>
+                            <p>Issued this <strong id="doc_res_day" class="dynamic-data placeholder">[Day]</strong> day of <strong id="doc_res_month" class="dynamic-data placeholder">[Month]</strong>, <strong id="doc_res_year" class="dynamic-data placeholder">[Year]</strong> at the Office of the Punong Barangay, {{ BARANGAY_NAME|default:'[Your Barangay Name]' }}, {{ MUNICIPALITY_NAME|default:'[Your Municipality Name]' }}, {{ PROVINCE_NAME|default:'[Your Province Name]' }}, Philippines.</p>
+                        </div>
+                        <div class="certificate-footer" style="margin-top: 80px;">
+                            
+                                <div class="signature">
+                                    <strong id="pbSignatureName" class="pbSignatureName">[Punong Barangay Name]</strong>
+                                    Punong Barangay
+                                </div>
+
+                        </div>
+                    </div>
+                </div>
+                <div id="brgy-indigency-document-view" class="document-view hidden">
+                    <h3>Certificate of Indigency</h3>
+                    <button class="print-doc-btn">Print Document</button>
+                    <div class="document-paper">
+                        {% include 'residents/html/certificate-header.html' %}
+                        <h1 class="certificate-title" style="font-size: 1.8em; margin: 30px 0;">CERTIFICATE OF INDIGENCY</h1>
+                        <div class="certificate-body">
+                            <h4 style="font-weight: bold; margin-bottom: 20px;">TO WHOM IT MAY CONCERN:</h4>
+                            <p>This is to certify that <strong id="doc_ind_name" class="dynamic-data placeholder">[Full Name]</strong>, of legal age, Filipino citizen, a bona fide resident of <strong id="doc_ind_address" class="dynamic-data placeholder">[Address]</strong>, {{ BARANGAY_NAME|default:'[Your Barangay Name]' }}, {{ MUNICIPALITY_NAME|default:'[Your Municipality Name]' }}, {{ PROVINCE_NAME|default:'[Your Province Name]' }}, is known to me to be a person of good moral character and belongs to an <strong>INDIGENT FAMILY</strong> in this Barangay.</p>
+                            <p>This certification is issued upon the request of the above-named person for the purpose of <strong id="doc_ind_purpose" class="dynamic-data placeholder">[Purpose]</strong>.</p>
+                            <p>Issued this <strong id="doc_ind_day" class="dynamic-data placeholder">[Day]</strong> day of <strong id="doc_ind_month" class="dynamic-data placeholder">[Month]</strong>, <strong id="doc_ind_year" class="dynamic-data placeholder">[Year]</strong> at the Office of the Punong Barangay, {{ BARANGAY_NAME|default:'[Your Barangay Name]' }}, {{ MUNICIPALITY_NAME|default:'[Your Municipality Name]' }}, {{ PROVINCE_NAME|default:'[Your Province Name]' }}, Philippines.</p>
+                        </div>
+                        <div class="certificate-footer" style="margin-top: 80px;">
+                            <div class="signature">
+                                <strong>[Your Barangay Captain's Full Name]</strong>
+                                Punong Barangay
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'residents/js/script.js' %}"></script> 
+
+    <script>
+
+    const PRODUCTION_MODE = false; // Set to true to disable logs, false to enable
+
+    if (PRODUCTION_MODE) {
+        console.log = function() {}; 
+        console.warn = function() {}; 
+        console.error = function() {};
+        console.info = function() {}; 
+        console.debug = function() {};
+    }
+
+// MAIN SCRIPT FOR TRANSACTIONS PAGE
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM fully loaded and parsed. Initializing script...");
+
+    // --- GLOBAL VARS & CONFIG ---
+    const transactionButtons = document.querySelectorAll('.transaction-btn');
+    const forms = document.querySelectorAll('.request-form');
+    const docs = document.querySelectorAll('.document-view');
+    const searchInputs = document.querySelectorAll('.resident-search-input');
+    const clearButtons = document.querySelectorAll('.clear-resident-btn');
+    const printButtons = document.querySelectorAll('.print-doc-btn');
+    
+    const searchUrl = "{% url 'search_residents_ajax' %}"; 
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    
+    // Barangay Captain name is still handled here or via API for signature purposes
+   // const barangayCaptainName = "{{ BARANGAY_CAPTAIN_NAME|default:'MARTINEZ, JOSELITO R. JR.' }}";
+    const officialsApiUrl = "{% url 'get_barangay_officials_api' %}"; 
+
+    // --- UTILITY FUNCTIONS ---
+    function getDayWithOrdinal(day) {
+        if (typeof day !== 'number') { day = parseInt(day); }
+        if (isNaN(day) || day < 1 || day > 31) return '[Day]'; // Return placeholder for invalid day
+        if (day > 3 && day < 21) return day + 'th';
+        switch (day % 10) {
+            case 1: return day + "st";
+            case 2: return day + "nd";
+            case 3: return day + "rd";
+            default: return day + "th";
+        }
+    }
+
+function setDynamicText(selectorOrElement, text, placeholderText = "") {
+        const element = typeof selectorOrElement === 'string' ? document.querySelector(selectorOrElement) : selectorOrElement;
+        if (element) {
+            const effectiveText = (text === undefined || text === null || text === "") ? placeholderText : text;
+            let finalTextToDisplay = effectiveText; // Initialize with original/placeholder text
+
+            const isPurposeField = element.id && element.id.toLowerCase().includes('purpose');
+
+            if (typeof effectiveText === 'string' && !/^\[.*\]$/.test(effectiveText) && effectiveText !== placeholderText && !effectiveText.toLowerCase().startsWith('php')) {
+                if (!isPurposeField && (effectiveText.includes(' ') || effectiveText === effectiveText.toUpperCase())) {
+                    const words = effectiveText.toLowerCase().split(' ');
+                    finalTextToDisplay = words.map(word => {
+                        if (word.length > 0) { return word.charAt(0).toUpperCase() + word.slice(1); }
+                        return "";
+                    }).join(' ');
+                }
+            }
+            
+            element.textContent = finalTextToDisplay;
+
+            if (finalTextToDisplay !== placeholderText && text !== "" && text !== undefined && text !== null) { 
+                element.classList.remove('placeholder');
+            } else { 
+                element.classList.add('placeholder'); 
+            }
+        }
+    }
+    
+
+    function formatOfficialName(dbName) {
+        if (!dbName || typeof dbName !== 'string') {
+            return dbName; 
+        }
+
+        const parts = dbName.split(',');
+        if (parts.length < 2) {
+            if (dbName === dbName.toUpperCase()) { 
+                return dbName.split(' ').map(n => n.charAt(0).toUpperCase() + n.slice(1).toLowerCase()).join(' ');
+            }
+            return dbName; 
+        }
+
+        const lastNameRaw = parts[0].trim();
+        const lastName = lastNameRaw.charAt(0).toUpperCase() + lastNameRaw.slice(1).toLowerCase(); 
+        
+        let namePart = parts.slice(1).join(',').trim(); 
+
+        const suffixMap = [
+            { db: 'JR.', display: 'Jr.' }, { db: 'SR.', display: 'Sr.' },
+            { db: 'JR', display: 'Jr.' },  { db: 'SR', display: 'Sr.' }, 
+            { db: 'I', display: 'I' },     { db: 'II', display: 'II' },
+            { db: 'III', display: 'III' }, { db: 'IV', display: 'IV' },
+            { db: 'V', display: 'V' }
+        ];
+        let displaySuffix = '';
+        suffixMap.sort((a, b) => b.db.length - a.db.length);
+
+        for (const s of suffixMap) {
+            if (namePart.toUpperCase().endsWith(' ' + s.db.toUpperCase())) {
+                displaySuffix = s.display;
+                namePart = namePart.substring(0, namePart.toUpperCase().lastIndexOf(' ' + s.db.toUpperCase())).trim();
+                break;
+            } else if (namePart.toUpperCase() === s.db.toUpperCase()) { 
+                displaySuffix = s.display;
+                namePart = ""; 
+                break;
+            }
+        }
+        
+        const nameTokens = namePart.split(/\s+/).filter(token => token.length > 0);
+        let firstNameParts = [];
+        let middleInitial = '';
+
+        if (nameTokens.length > 0) {
+            const lastToken = nameTokens[nameTokens.length - 1];
+            if (nameTokens.length > 1 && /^[A-Z]\.?$/.test(lastToken.toUpperCase())) { 
+                middleInitial = lastToken.charAt(0).toUpperCase() + (lastToken.endsWith('.') || lastToken.length === 1 ? '.' : '');
+                firstNameParts = nameTokens.slice(0, -1);
+            } else {
+                firstNameParts = nameTokens;
+            }
+        }
+        
+        const formattedFirstName = firstNameParts.map(name => name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()).join(' ');
+
+        let result = formattedFirstName;
+        if (middleInitial) {
+            result += ` ${middleInitial}`;
+        }
+        result += ` ${lastName}`; 
+        if (displaySuffix) {
+            result += ` ${displaySuffix}`;
+        }
+        return result.trim();
+    }
+
+    function getCurrentPreviewDateValuesFromSpans(daySpanSelector, monthSpanSelector, yearSpanSelector) {
+        const daySpanContent = document.querySelector(daySpanSelector)?.textContent.trim() || '';
+        const dayMatch = daySpanContent.match(/^(\d+)/);
+        let day = dayMatch ? parseInt(dayMatch[1]) : new Date().getUTCDate();
+
+        const monthSpanContent = document.querySelector(monthSpanSelector)?.textContent.trim() || '';
+        const monthIndex = monthNames.findIndex(m => m.toLowerCase() === monthSpanContent.toLowerCase());
+        let month = (monthIndex !== -1) ? monthIndex + 1 : new Date().getUTCMonth() + 1; 
+
+        const yearSpanContent = document.querySelector(yearSpanSelector)?.textContent.trim() || '';
+        let year = /^\d{4}$/.test(yearSpanContent) && !yearSpanContent.startsWith('[') ? parseInt(yearSpanContent) : new Date().getUTCFullYear();
+        
+        if (isNaN(day)) day = new Date().getUTCDate();
+        if (isNaN(month)) month = new Date().getUTCMonth() + 1;
+        if (isNaN(year)) year = new Date().getUTCFullYear();
+        return { day, month, year };
+    }
+
+    function updateMainDateFieldAndAllPreviewSpans(year, monthNumeric, day, mainDateInputSelector, daySpanSelector, monthSpanSelector, yearSpanSelector, useOrdinalForDay = true) { // Added useOrdinalForDay
+        const mainDateField = document.querySelector(mainDateInputSelector); 
+        if (!mainDateField) { console.error("Main date field not found for update:", mainDateInputSelector); return; }
+
+        let d = parseInt(day);
+        let m = parseInt(monthNumeric); 
+        let y = parseInt(year);
+
+        if (isNaN(d) || isNaN(m) || isNaN(y) || m < 1 || m > 12 || d < 1 ) {
+            const todayForFallback = new Date();
+            d = todayForFallback.getUTCDate();
+            m = todayForFallback.getUTCMonth() + 1;
+            y = todayForFallback.getUTCFullYear();
+                console.warn(`Invalid date parts received (${year}-${monthNumeric}-${day}), defaulting to ${y}-${m}-${d}`);
+        }
+        
+        const tempDate = new Date(Date.UTC(y, m - 1, 1)); 
+        tempDate.setUTCDate(d); 
+
+        if (tempDate.getUTCFullYear() !== y || tempDate.getUTCMonth() + 1 !== m || tempDate.getUTCDate() !== d) {
+            console.warn(`Date ${y}-${m}-${d} is invalid (e.g., Feb 30). Adjusting day.`);
+            const lastDayOfMonth = new Date(Date.UTC(y, m, 0)).getUTCDate(); 
+            d = Math.min(parseInt(day), lastDayOfMonth); 
+            if (d < 1) d = 1; 
+        }
+
+        const formattedMonth = m.toString().padStart(2, '0');
+        const formattedDay = d.toString().padStart(2, '0');
+        mainDateField.value = `${y}-${formattedMonth}-${formattedDay}`;
+        mainDateField.dispatchEvent(new Event('change', { bubbles: true }));
+
+        const dayText = useOrdinalForDay ? getDayWithOrdinal(d) : d.toString(); // Conditional ordinal
+        setDynamicText(daySpanSelector, dayText, '[Day]');
+        setDynamicText(monthSpanSelector, (m >=1 && m <=12) ? monthNames[m - 1] : '[Month]', '[Month]');
+        setDynamicText(yearSpanSelector, y.toString(), '[Year]');
+    }
+    
+    let activeInlineEditor = null; 
+
+    function createAndReplaceWithInput(spanElement, inputType, mainFormFieldOrSelector, config = {}) {
+        console.log(`Attempting to edit: ${spanElement.id || 'anonymous span'}, type: ${inputType}`);
+        if (activeInlineEditor && activeInlineEditor !== spanElement) { 
+            console.log("Another editor is active. Aborting.");
+            return; 
+        }
+        if (spanElement.querySelector('input, select')) {console.log("Already in edit mode."); return;}
+
+        activeInlineEditor = spanElement; 
+
+        const originalText = spanElement.textContent.trim();
+        const isPlaceholder = spanElement.classList.contains('placeholder') || originalText.startsWith('[');
+        const defaultPartName = (config.partName || spanElement.id || 'Value').split('_').pop().replace('val','').replace('cl','').replace('doc','').trim();
+        const placeholderDefault = `[${defaultPartName.charAt(0).toUpperCase() + defaultPartName.slice(1)}]`;
+        const placeholderContent = config.placeholder || placeholderDefault;
+        const originalValueForRevert = isPlaceholder ? placeholderContent : originalText;
+        
+        let inputEl;
+        const computedStyle = window.getComputedStyle(spanElement);
+        const commonInputStyle = `
+            border: 1px solid #007bff; 
+            font-family: ${computedStyle.fontFamily}; 
+            font-size: ${computedStyle.fontSize}; 
+            font-weight: ${computedStyle.fontWeight};
+            line-height: ${computedStyle.lineHeight};
+            padding: 0 2px; margin: 0; box-sizing: border-box; display: inline-block;
+            vertical-align: baseline;
+        `;
+
+        if (inputType === 'select' && config.optionsArray) {
+            inputEl = document.createElement('select');
+            inputEl.style.cssText = commonInputStyle;
+            inputEl.style.width = `${Math.max(spanElement.offsetWidth + 30, 100)}px`; 
+            config.optionsArray.forEach(opt => {
+                const option = document.createElement('option'); option.value = opt.value; option.textContent = opt.text;
+                inputEl.appendChild(option);
+            });
+            const formFieldForSelect = typeof mainFormFieldOrSelector === 'string' ? document.querySelector(mainFormFieldOrSelector) : mainFormFieldOrSelector;
+            inputEl.value = formFieldForSelect ? formFieldForSelect.value : (config.optionsArray.length > 0 ? config.optionsArray[0].value : '');
+            if (config.partName === 'month') {
+                const monthIndex = monthNames.findIndex(m => m.toLowerCase() === originalText.toLowerCase());
+                if (monthIndex !== -1) {
+                    inputEl.value = monthIndex + 1;
+                }
+            }
+        } else { 
+            inputEl = document.createElement('input'); inputEl.type = 'text'; 
+            inputEl.style.cssText = commonInputStyle;
+            let inputWidth = spanElement.offsetWidth + 10;
+            if(config.partName === 'month') inputWidth = Math.max(inputWidth, 80); 
+            else if(config.partName === 'year') inputWidth = Math.max(inputWidth, 60);
+            else if(config.partName === 'day') inputWidth = Math.max(inputWidth, 40);
+            else inputWidth = Math.max(inputWidth, 80); 
+            inputEl.style.width = `${inputWidth}px`;
+            inputEl.value = isPlaceholder ? '' : originalText.replace(/st|nd|rd|th/i, ''); 
+        }
+
+        spanElement.style.display = 'none'; 
+        spanElement.parentNode.insertBefore(inputEl, spanElement.nextSibling || spanElement); 
+        console.log("Input element inserted. Focusing...");
+        inputEl.focus(); 
+        if (inputEl.select) inputEl.select();
+
+        function completeEdit(save = true) { 
+            if (!activeInlineEditor || activeInlineEditor !== spanElement) return; 
+
+            inputEl.removeEventListener('blur', onBlur);
+            inputEl.removeEventListener('keydown', onKeydown);
+            if (inputType === 'select') inputEl.removeEventListener('change', saveAndClose);
+            
+            if (inputEl.parentNode) { 
+                if (save) saveChange(); 
+                inputEl.parentNode.removeChild(inputEl); 
+            }
+            spanElement.style.display = ''; 
+            activeInlineEditor = null; 
+            console.log("Editing complete for:", spanElement.id);
+        }
+
+        function saveChange() {
+            const formFieldToUpdate = typeof mainFormFieldOrSelector === 'string' ? document.querySelector(mainFormFieldOrSelector) : mainFormFieldOrSelector;
+            if (!formFieldToUpdate) {console.error("Target form field not found for in-place edit save:", mainFormFieldOrSelector); return;}
+
+            let newValueFromInput = inputEl.value.trim();
+            
+            if (config.isDatePart) {
+                const { day: currentDay, month: currentMonthNumeric, year: currentYearVal } = 
+                    getCurrentPreviewDateValuesFromSpans(config.daySpanSelector, config.monthSpanSelector, config.yearSpanSelector);
+                let newDay = currentDay, newMonthNumericVal = currentMonthNumeric, newYear = currentYearVal;
+                let isValidDatePart = false;
+
+                if (config.partName === 'day') {
+                    const dayVal = parseInt(newValueFromInput);
+                    if (!isNaN(dayVal) && dayVal >= 1 && dayVal <= 31) { newDay = dayVal; isValidDatePart = true; } 
+                    else if (newValueFromInput !== "") { alert("Please enter a valid day (1-31)."); }
+                    else { isValidDatePart = true; newDay = currentDay; } 
+                } else if (config.partName === 'month') {
+                    if (inputType === 'select') { newMonthNumericVal = parseInt(newValueFromInput); isValidDatePart = true; }
+                } else if (config.partName === 'year') {
+                    if (/^\d{4}$/.test(newValueFromInput)) { newYear = parseInt(newValueFromInput); isValidDatePart = true; } 
+                    else if (newValueFromInput !== "") { alert("Please enter a valid 4-digit year."); }
+                    else { isValidDatePart = true; newYear = currentYearVal; } 
+                }
+
+                if (isValidDatePart) {
+                    updateMainDateFieldAndAllPreviewSpans(newYear, newMonthNumericVal, newDay, mainFormFieldOrSelector, config.daySpanSelector, config.monthSpanSelector, config.yearSpanSelector, config.useOrdinalForDayInSpan !== undefined ? config.useOrdinalForDayInSpan : true ); // Pass ordinal flag
+                } else { 
+                    setDynamicText(spanElement, originalValueForRevert, placeholderContent);
+                }
+            } else { 
+                if (inputType === 'select') {
+                    newValueFromInput = inputEl.value; 
+                    const selectedText = inputEl.options[inputEl.selectedIndex]?.text || newValueFromInput;
+                    setDynamicText(spanElement, selectedText, placeholderContent);
+                } else {
+                        setDynamicText(spanElement, newValueFromInput === "" ? placeholderContent : newValueFromInput, placeholderContent);
+                }
+                formFieldToUpdate.value = newValueFromInput;
+                formFieldToUpdate.dispatchEvent(new Event('change', { bubbles: true })); 
+            }
+        }
+        
+        function saveAndClose() { 
+            if (activeInlineEditor === spanElement) completeEdit(true);
+        }
+        function onBlur() { 
+            setTimeout(() => {
+                if (activeInlineEditor === spanElement && document.activeElement !== inputEl) {
+                    completeEdit(true);
+                }
+            }, 150); 
+        }
+        function onKeydown(e) {
+            if (e.key === 'Enter') { e.preventDefault(); if(activeInlineEditor === spanElement) completeEdit(true); }
+            else if (e.key === 'Escape') {
+                e.preventDefault();
+                setDynamicText(spanElement, originalValueForRevert, placeholderContent); 
+                completeEdit(false); 
+            }
+        }
+
+        inputEl.addEventListener('blur', onBlur);
+        if (inputType === 'select') inputEl.addEventListener('change', saveAndClose); 
+        inputEl.addEventListener('keydown', onKeydown);
+    }
+
+    function makePreviewFieldEditable(spanSelector, formInputSelector, inputType = 'text', config = {}) {
+        const spanElement = document.querySelector(spanSelector);
+        if (!spanElement) { console.warn("makePreviewFieldEditable: Span not found -", spanSelector); return; }
+        if (spanElement.dataset.editableAttached === 'true' && !config.forceReattach) return;
+
+        if(config.forceReattach && spanElement.dataset.clickHandlerAttached) {
+            spanElement.removeEventListener('click', spanElement.clickHandlerRef);
+            delete spanElement.clickHandlerRef; 
+        }
+        
+        spanElement.clickHandlerRef = function(event) { 
+            event.stopPropagation();
+            console.log(`Span clicked: ${spanSelector}`);
+            createAndReplaceWithInput(spanElement, inputType, formInputSelector, config);
+        };
+        spanElement.addEventListener('click', spanElement.clickHandlerRef);
+
+        spanElement.classList.add('editable-in-preview');
+        spanElement.dataset.editableAttached = 'true';
+        spanElement.dataset.clickHandlerAttached = 'true';
+    }
+    
+    function makeDatePartEditableWrapper(spanSelector, inputType, mainDateInputSelector, partName, dateClusterConfig) {
+        const spanElement = document.querySelector(spanSelector);
+        if (!spanElement) { console.warn("makeDatePartEditableWrapper: Span not found -", spanSelector); return; }
+        if (spanElement.dataset.editableAttached === 'true' && !dateClusterConfig.forceReattach) return;
+
+        if(dateClusterConfig.forceReattach && spanElement.dataset.clickHandlerAttached) {
+            spanElement.removeEventListener('click', spanElement.clickHandlerRef);
+            delete spanElement.clickHandlerRef;
+        }
+
+        spanElement.clickHandlerRef = function(event) {
+            event.stopPropagation();
+            console.log(`Date part clicked: ${spanSelector}`);
+            let useOrdinalForDayInSpan = true; // Default for 'Given this DAY day of MONTH'
+            if (mainDateInputSelector === '#cl_date_issued' || mainDateInputSelector === '#cl_payment_date_issued') {
+                useOrdinalForDayInSpan = false; // For 'MONTH DAY, YEAR' format
+            }
+
+            createAndReplaceWithInput(spanElement, inputType, mainDateInputSelector, { 
+                ...dateClusterConfig, 
+                partName: partName, 
+                isDatePart: true,
+                useOrdinalForDayInSpan: useOrdinalForDayInSpan // Pass this to saveChange via config
+            });
+        };
+        spanElement.addEventListener('click', spanElement.clickHandlerRef);
+        
+        spanElement.classList.add('editable-in-preview');
+        spanElement.dataset.editableAttached = 'true';
+        spanElement.dataset.clickHandlerAttached = 'true';
+    }
+    
+    function fetchAndPopulateOfficials() {
+        console.log("Fetching officials from:", officialsApiUrl);
+        fetch(officialsApiUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Officials data received:", data);
+                const pbNameEl = document.getElementById('leftnav_pb_name');
+                const pbSignatureNameEl = document.getElementById('pbSignatureName'); 
+                
+                const formattedPBName = formatOfficialName(data.punong_barangay_name || '[Punong Barangay Name]');
+                if (pbNameEl) {
+                    pbNameEl.textContent = 'Hon. ' + formattedPBName;
+                }
+                if (pbSignatureNameEl) { 
+                    pbSignatureNameEl.textContent = 'Hon. ' + formattedPBName;
+                }
+
+                const kagawadsContainer = document.getElementById('leftnav_kagawads_container');
+                if (kagawadsContainer) {
+                    kagawadsContainer.innerHTML = ''; 
+                    if (data.kagawad_names && data.kagawad_names.length > 0) {
+                        data.kagawad_names.forEach(name => {
+                            const nameP = document.createElement('p');
+                            nameP.style.cssText = "margin:0; text-decoration: underline; text-spacing:1px; text-underline-offset: 2px; font-weight:bold;";
+                            nameP.textContent = 'Hon. ' + formatOfficialName(name); 
+
+                            const titleP = document.createElement('p');
+                            titleP.style.cssText = "margin: 0 0 15px 0; font-size:1em; color:rgb(38, 134, 243); font-weight: bold;";
+                            titleP.className = 'pos';
+                            titleP.textContent = 'Brgy. Kagawad';
+
+                            kagawadsContainer.appendChild(nameP);
+                            kagawadsContainer.appendChild(titleP);
+                        });
+                    } else { 
+                        const placeholderP = document.createElement('p');
+                        placeholderP.style.cssText = "margin:0;";
+                        placeholderP.textContent = "[No Active Kagawads]";
+                            const titleP = document.createElement('p');
+                        titleP.style.cssText = "margin:0 0 15px 0; font-size:0.9em; color:rgb(38, 134, 243); font-weight: bold;";
+                        titleP.textContent = 'Brgy. Kagawad';
+                        kagawadsContainer.appendChild(placeholderP);
+                        kagawadsContainer.appendChild(titleP);
+                    }
+                }
+
+                const skNameEl = document.getElementById('leftnav_sk_name');
+                if (skNameEl) {
+                    skNameEl.textContent = 'Hon. ' + formatOfficialName(data.sk_chairman_name || '[SK Chairwoman Name]');
+                }
+
+                const tresNameEl = document.getElementById('leftnav_tres_name');
+                if (tresNameEl) {
+                    tresNameEl.textContent = formatOfficialName(data.treasurer_name || '[Treasurer Name]');
+                }
+
+                const secNameEl = document.getElementById('leftnav_sec_name');
+                if (secNameEl) {
+                    secNameEl.textContent = formatOfficialName(data.secretary_name || '[Secretary Name]');
+                }
+            })
+            .catch(error => {
+                console.error('Failed to fetch barangay officials:', error);
+                // Fallback to context variable if API fails for PB, if desired, or keep placeholder
+                 const pbNameEl = document.getElementById('leftnav_pb_name');
+                 const pbSignatureNameEl = document.getElementById('pbSignatureName');
+                 const formattedPBName = formatOfficialName(barangayCaptainName || '[Punong Barangay Name]'); // Use JS global if API fails
+                 if(pbNameEl) pbNameEl.textContent = 'Hon. ' + formattedPBName;
+                 if(pbSignatureNameEl) pbSignatureNameEl.textContent = formattedPBName.toUpperCase();
+            });
+    }
+
+    transactionButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            console.log("Transaction button clicked:", this.textContent);
+            const formId = this.getAttribute('data-form');
+            const docId = this.getAttribute('data-doc'); 
+            
+            forms.forEach(form => form.classList.add('hidden'));
+            docs.forEach(doc => doc.classList.add('hidden'));
+            
+            const targetForm = document.getElementById(formId);
+            if (targetForm) {
+                targetForm.classList.remove('hidden');
+                clearFormFields(targetForm, true); 
+            }
+            
+            const targetDoc = docId ? document.getElementById(docId) : null;
+            if (targetDoc) {
+                targetDoc.classList.remove('hidden');
+                console.log("Populating doc fields for:", docId);
+                populateDocFields(targetDoc, {}); 
+
+                if (docId === 'brgy-clearance-document-view') {
+                    fetchAndPopulateOfficials(); 
+
+                    setTimeout(() => { 
+                        console.log("Setting up in-place editors for Barangay Clearance after transaction button click.");
+                        const forceReattach = { forceReattach: true }; 
+                        const certDateConfig = { daySpanSelector: '#doc_cl_day', monthSpanSelector: '#doc_cl_month', yearSpanSelector: '#doc_cl_year', useOrdinalForDayInSpan: true, ...forceReattach };
+                        makeDatePartEditableWrapper('#doc_cl_day', 'text', '#cl_certificate_issue_date', 'day', certDateConfig);
+                        makeDatePartEditableWrapper('#doc_cl_month', 'select', '#cl_certificate_issue_date', 'month', { ...certDateConfig, optionsArray: monthNames.map((m, i) => ({value: i+1, text: m})) });
+                        makeDatePartEditableWrapper('#doc_cl_year', 'text', '#cl_certificate_issue_date', 'year', certDateConfig);
+
+                        const cedulaDateConfig = { daySpanSelector: '#doc_cl_cedula_day', monthSpanSelector: '#doc_cl_cedula_month', yearSpanSelector: '#doc_cl_cedula_year', useOrdinalForDayInSpan: false, ...forceReattach };
+                        makeDatePartEditableWrapper('#doc_cl_cedula_day', 'text', '#cl_date_issued', 'day', cedulaDateConfig);
+                        makeDatePartEditableWrapper('#doc_cl_cedula_month', 'select', '#cl_date_issued', 'month', { ...cedulaDateConfig, optionsArray: monthNames.map((m, i) => ({value: i+1, text: m})) });
+                        makeDatePartEditableWrapper('#doc_cl_cedula_year', 'text', '#cl_date_issued', 'year', cedulaDateConfig);
+
+                        makePreviewFieldEditable('#doc_cl_name', '#cl_full_name', 'text', { placeholder: '[Full Name]', ...forceReattach});
+                        makePreviewFieldEditable('#doc_cl_purok_val', '#cl_purok', 'text', { placeholder: '[Purok]', ...forceReattach});
+                        makePreviewFieldEditable('#doc_cl_address', '#cl_address', 'text', { placeholder: "[Resident's Barangay Address]", ...forceReattach});
+                        const civilStatusOptions = Array.from(document.querySelectorAll('#cl_civil_status option')).filter(opt => opt.value).map(opt => ({ value: opt.value, text: opt.text }));
+                        makePreviewFieldEditable('#doc_cl_civil_status', '#cl_civil_status', 'select', { optionsArray: civilStatusOptions, placeholder: '[Civil Status]', ...forceReattach });
+                        makePreviewFieldEditable('#doc_cl_purpose', '#cl_purpose', 'text', { placeholder: '[Purpose]', ...forceReattach });
+                        makePreviewFieldEditable('#doc_cl_cedula_val', '#cl_cedula_no', 'text', { placeholder: '[Cedula No.]', ...forceReattach });
+                        
+                        makePreviewFieldEditable('#doc_cl_or_no', '#cl_or_no', 'text', { placeholder: '[OR No.]', ...forceReattach });
+                        makePreviewFieldEditable('#doc_cl_amount_paid', '#cl_amount_paid', 'text', { placeholder: '[Amount Paid]', ...forceReattach });
+                        makePreviewFieldEditable('#doc_cl_cert_fee', '#cl_cert_fee', 'text', { placeholder: '[Cert. Fee]', ...forceReattach });
+                        makePreviewFieldEditable('#doc_cl_doc_stamp', '#cl_doc_stamp', 'text', { placeholder: '[Doc. Stamp]', ...forceReattach });
+
+                        const paymentDateConfig = {
+                            daySpanSelector: '#doc_cl_payment_date_issued_day',
+                            monthSpanSelector: '#doc_cl_payment_date_issued_month',
+                            yearSpanSelector: '#doc_cl_payment_date_issued_year',
+                            useOrdinalForDayInSpan: false, // No ordinal for payment date day
+                            ...forceReattach
+                        };
+                        makeDatePartEditableWrapper('#doc_cl_payment_date_issued_day', 'text', '#cl_payment_date_issued', 'day', paymentDateConfig);
+                        makeDatePartEditableWrapper('#doc_cl_payment_date_issued_month', 'select', '#cl_payment_date_issued', 'month', { ...paymentDateConfig, optionsArray: monthNames.map((m, i) => ({value: i+1, text: m})) });
+                        makeDatePartEditableWrapper('#doc_cl_payment_date_issued_year', 'text', '#cl_payment_date_issued', 'year', paymentDateConfig);
+
+                    }, 150); 
+                }
+            }
+        });
+    });
+
+    searchInputs.forEach(input => { 
+        let resultsList = input.closest('.resident-search-container').querySelector('.search-results-list');
+        input.addEventListener('keyup', function(e) {
+            const query = e.target.value;
+            resultsList.innerHTML = ''; 
+            if (query.length < 2) { resultsList.classList.add('hidden'); return; }
+            resultsList.innerHTML = '<div class="loading-item">Searching...</div>';
+            resultsList.classList.remove('hidden');
+            fetch(`${searchUrl}?q=${encodeURIComponent(query)}`)
+                .then(response => {
+                    if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
+                    return response.json();
+                })
+                .then(data => {
+                    resultsList.innerHTML = ''; 
+                    if (data.residents && data.residents.length > 0) {
+                        data.residents.forEach(resident => {
+                            const item = document.createElement('div');
+                            item.classList.add('result-item');
+                            item.textContent = `${resident.full_name} - ${resident.address || 'No address recorded'}`;
+                            item.dataset.id = resident.id; item.dataset.fullName = resident.full_name;
+                            item.dataset.address = resident.address; item.dataset.dob = resident.date_of_birth;
+                            item.dataset.civilStatusKey = resident.civil_status_key; item.dataset.civilStatusDisplay = resident.civil_status_display;
+                            item.dataset.purok = resident.purok; item.dataset.gender = resident.gender;
+                            item.addEventListener('click', function() {
+                                const parentForm = this.closest('.request-form');
+                                const docId = parentForm.id.replace('-request-form', '-document-view');
+                                populateFormAndDoc(parentForm, docId, this.dataset); 
+                                resultsList.innerHTML = ''; resultsList.classList.add('hidden');
+                            });
+                            resultsList.appendChild(item);
+                        });
+                    } else { resultsList.innerHTML = '<div class="result-item">No residents found.</div>'; }
+                    resultsList.classList.remove('hidden');
+                })
+                .catch(error => {
+                    console.error('Search Error:', error);
+                    resultsList.innerHTML = '<div class="error-item">Search failed. Please try again.</div>';
+                    resultsList.classList.remove('hidden');
+                });
+        });
+        document.addEventListener('click', function(event) {
+            const searchContainer = input.closest('.resident-search-container');
+            if (searchContainer && !searchContainer.contains(event.target)) {
+                if (resultsList.innerHTML !== '') { resultsList.innerHTML = ''; resultsList.classList.add('hidden');}
+            }
+        });
+    });
+    
+    document.querySelectorAll('#brgy-clearance-request-form input, #brgy-clearance-request-form select').forEach(input => {
+        input.addEventListener('change', function() {
+                if (!this.closest('.request-form.hidden')) { 
+                updateDocumentPreview(this); 
+            }
+        });
+    });
+    
+    function updateDocumentPreview(changedInputElement) {
+        const form = changedInputElement.closest('.request-form');
+        if (!form || form.id !== 'brgy-clearance-request-form') return; 
+        const doc = document.getElementById('brgy-clearance-document-view');
+        if (!doc) return;
+        const id = changedInputElement.id;
+        const today = new Date(); 
+
+        if (id === 'cl_certificate_issue_date') {
+            const dateVal = changedInputElement.value; 
+            let y = today.getUTCFullYear(), m = today.getUTCMonth() + 1, d = today.getUTCDate();
+            if (dateVal) { try { const dateObj = new Date(dateVal + 'T00:00:00Z'); if (!isNaN(dateObj.getTime())) { y = dateObj.getUTCFullYear(); m = dateObj.getUTCMonth() + 1; d = dateObj.getUTCDate(); }} catch (e) {}}
+            updateMainDateFieldAndAllPreviewSpans(y, m, d, '#cl_certificate_issue_date', '#doc_cl_day', '#doc_cl_month', '#doc_cl_year', true); // Ordinal
+        }
+        else if (id === 'cl_date_issued') { 
+            const dateVal = changedInputElement.value; 
+            let y = today.getUTCFullYear(), m = today.getUTCMonth() + 1, d = today.getUTCDate(); 
+            let usePlaceholders = true;
+            if (dateVal) { try { const dateObj = new Date(dateVal + 'T00:00:00Z'); if (!isNaN(dateObj.getTime())) { y = dateObj.getUTCFullYear(); m = dateObj.getUTCMonth() + 1; d = dateObj.getUTCDate(); usePlaceholders = false;}} catch (e) {}}
+            if (usePlaceholders && !dateVal) { 
+                setDynamicText('#doc_cl_cedula_day', '[Day]', '[Day]'); setDynamicText('#doc_cl_cedula_month', '[Month]', '[Month]'); setDynamicText('#doc_cl_cedula_year', '[Year]', '[Year]');
+            } else {
+                updateMainDateFieldAndAllPreviewSpans(y, m, d, '#cl_date_issued', '#doc_cl_cedula_day', '#doc_cl_cedula_month', '#doc_cl_cedula_year', false); // No ordinal
+            }
+        }
+        else if (id === 'cl_full_name') { setDynamicText('#doc_cl_name', changedInputElement.value, '[Full Name]'); }
+        else if (id === 'cl_purok') { setDynamicText('#doc_cl_purok_val', changedInputElement.value, '[Purok]'); }
+        else if (id === 'cl_address') { setDynamicText('#doc_cl_address', changedInputElement.value, "[Resident's Barangay Address]"); }
+        else if (id === 'cl_civil_status') {
+            const selectedText = changedInputElement.options[changedInputElement.selectedIndex]?.text;
+            setDynamicText('#doc_cl_civil_status', selectedText || (changedInputElement.value ? changedInputElement.value : ''), '[Civil Status]');
+        }
+        else if (id === 'cl_cedula_no') { setDynamicText('#doc_cl_cedula_val', changedInputElement.value, '[Cedula No.]'); }
+        else if (id === 'cl_purpose') { setDynamicText('#doc_cl_purpose', changedInputElement.value, '[Purpose]'); }
+        
+        else if (id === 'cl_or_no') { setDynamicText('#doc_cl_or_no', changedInputElement.value, '[OR No.]'); }
+        else if (id === 'cl_amount_paid') { setDynamicText('#doc_cl_amount_paid', changedInputElement.value, '[Amount Paid]'); }
+        else if (id === 'cl_cert_fee') { setDynamicText('#doc_cl_cert_fee', changedInputElement.value, '[Cert. Fee]'); }
+        else if (id === 'cl_doc_stamp') { setDynamicText('#doc_cl_doc_stamp', changedInputElement.value, '[Doc. Stamp]'); }
+        else if (id === 'cl_payment_date_issued') {
+            const dateVal = changedInputElement.value; 
+            let y = today.getUTCFullYear(), m = today.getUTCMonth() + 1, d = today.getUTCDate();
+            let usePlaceholders = true; 
+            if (dateVal) { 
+                try { 
+                    const dateObj = new Date(dateVal + 'T00:00:00Z'); 
+                    if (!isNaN(dateObj.getTime())) { 
+                        y = dateObj.getUTCFullYear(); 
+                        m = dateObj.getUTCMonth() + 1; 
+                        d = dateObj.getUTCDate(); 
+                        usePlaceholders = false;
+                    }
+                } catch (e) { /* Fallback */ }
+            }
+            if (usePlaceholders && !dateVal) { 
+                setDynamicText('#doc_cl_payment_date_issued_day', '[Day]', '[Day]');
+                setDynamicText('#doc_cl_payment_date_issued_month', '[Month]', '[Month]');
+                setDynamicText('#doc_cl_payment_date_issued_year', '[Year]', '[Year]');
+            } else {
+                updateMainDateFieldAndAllPreviewSpans(y, m, d,
+                    '#cl_payment_date_issued',
+                    '#doc_cl_payment_date_issued_day',
+                    '#doc_cl_payment_date_issued_month',
+                    '#doc_cl_payment_date_issued_year', false); // No ordinal
+            }
+        }
+        
+        if (id === 'cl_gender' || id === 'cl_full_name') { 
+            const gender = document.getElementById('cl_gender')?.value;
+            const subjectPronoun = gender === 'Male' ? 'HE' : (gender === 'Female' ? 'SHE' : '[he/she]');
+            const possessivePronoun = gender === 'Male' ? 'HIS' : (gender === 'Female' ? 'HER' : '[his/her]');
+            setDynamicText('#doc_cl_pronoun_subject', subjectPronoun, '[he/she]');
+            setDynamicText('#doc_cl_pronoun_possessive', possessivePronoun, '[his/her]');
+        }
+    }
+
+    function populateFormAndDoc(formElement, docId, selectedItemDataSet) { 
+        console.log("populateFormAndDoc with data:", selectedItemDataSet);
+        const docElement = docId ? document.getElementById(docId) : null;
+        
+        populateFormFields(formElement, selectedItemDataSet); 
+        if (docElement) { populateDocFields(docElement, selectedItemDataSet); } 
+        
+        const searchInput = formElement.querySelector('.resident-search-input');
+        if (searchInput) searchInput.value = '';
+
+        if (formElement.id === 'brgy-clearance-request-form' && docElement && docElement.id === 'brgy-clearance-document-view') {
+            setTimeout(() => {
+                console.log("Re-attaching in-place editors after populating form/doc from search.");
+                const forceReattach = { forceReattach: true };
+                const certDateConfig = { daySpanSelector: '#doc_cl_day', monthSpanSelector: '#doc_cl_month', yearSpanSelector: '#doc_cl_year', useOrdinalForDayInSpan: true, ...forceReattach };
+                makeDatePartEditableWrapper('#doc_cl_day', 'text', '#cl_certificate_issue_date', 'day', certDateConfig);
+                makeDatePartEditableWrapper('#doc_cl_month', 'select', '#cl_certificate_issue_date', 'month', { ...certDateConfig, optionsArray: monthNames.map((m, i) => ({value: i+1, text: m})) });
+                makeDatePartEditableWrapper('#doc_cl_year', 'text', '#cl_certificate_issue_date', 'year', certDateConfig);
+
+                const cedulaDateConfig = { daySpanSelector: '#doc_cl_cedula_day', monthSpanSelector: '#doc_cl_cedula_month', yearSpanSelector: '#doc_cl_cedula_year', useOrdinalForDayInSpan: false, ...forceReattach };
+                makeDatePartEditableWrapper('#doc_cl_cedula_day', 'text', '#cl_date_issued', 'day', cedulaDateConfig);
+                makeDatePartEditableWrapper('#doc_cl_cedula_month', 'select', '#cl_date_issued', 'month', { ...cedulaDateConfig, optionsArray: monthNames.map((m, i) => ({value: i+1, text: m})) });
+                makeDatePartEditableWrapper('#doc_cl_cedula_year', 'text', '#cl_date_issued', 'year', cedulaDateConfig);
+                
+                makePreviewFieldEditable('#doc_cl_name', '#cl_full_name', 'text', { placeholder: '[Full Name]', ...forceReattach});
+                makePreviewFieldEditable('#doc_cl_purok_val', '#cl_purok', 'text', { placeholder: '[Purok]', ...forceReattach});
+                makePreviewFieldEditable('#doc_cl_address', '#cl_address', 'text', { placeholder: "[Resident's Barangay Address]", ...forceReattach});
+                const civilStatusOptions = Array.from(document.querySelectorAll('#cl_civil_status option')).filter(opt => opt.value).map(opt => ({ value: opt.value, text: opt.text }));
+                makePreviewFieldEditable('#doc_cl_civil_status', '#cl_civil_status', 'select', { optionsArray: civilStatusOptions, placeholder: '[Civil Status]', ...forceReattach });
+                makePreviewFieldEditable('#doc_cl_purpose', '#cl_purpose', 'text', { placeholder: '[Purpose]', ...forceReattach });
+                makePreviewFieldEditable('#doc_cl_cedula_val', '#cl_cedula_no', 'text', { placeholder: '[Cedula No.]', ...forceReattach });
+
+                makePreviewFieldEditable('#doc_cl_or_no', '#cl_or_no', 'text', { placeholder: '[OR No.]', ...forceReattach });
+                makePreviewFieldEditable('#doc_cl_amount_paid', '#cl_amount_paid', 'text', { placeholder: '[Amount Paid]', ...forceReattach });
+                makePreviewFieldEditable('#doc_cl_cert_fee', '#cl_cert_fee', 'text', { placeholder: '[Cert. Fee]', ...forceReattach });
+                makePreviewFieldEditable('#doc_cl_doc_stamp', '#cl_doc_stamp', 'text', { placeholder: '[Doc. Stamp]', ...forceReattach });
+
+                const paymentDateConfig = {
+                    daySpanSelector: '#doc_cl_payment_date_issued_day',
+                    monthSpanSelector: '#doc_cl_payment_date_issued_month',
+                    yearSpanSelector: '#doc_cl_payment_date_issued_year',
+                    useOrdinalForDayInSpan: false, 
+                    ...forceReattach
+                };
+                makeDatePartEditableWrapper('#doc_cl_payment_date_issued_day', 'text', '#cl_payment_date_issued', 'day', paymentDateConfig);
+                makeDatePartEditableWrapper('#doc_cl_payment_date_issued_month', 'select', '#cl_payment_date_issued', 'month', { ...paymentDateConfig, optionsArray: monthNames.map((m, i) => ({value: i+1, text: m})) });
+                makeDatePartEditableWrapper('#doc_cl_payment_date_issued_year', 'text', '#cl_payment_date_issued', 'year', paymentDateConfig);
+
+            }, 150);
+        }
+    }
+
+    function populateFormFields(form, data) { 
+        console.log("Populating form fields with (from search/clear):", data);
+        const isDataAvailable = data && data.id; 
+        
+        if (form.id === 'brgy-clearance-request-form') {
+            form.querySelector('#cl_resident_id').value = isDataAvailable ? data.id : '';
+            form.querySelector('#cl_full_name').value = isDataAvailable ? data.fullName : '';
+            form.querySelector('#cl_purok').value = isDataAvailable ? data.purok : '';
+            form.querySelector('#cl_address').value = isDataAvailable ? data.address : '';
+            form.querySelector('#cl_birthdate').value = isDataAvailable ? data.dob : ''; 
+            form.querySelector('#cl_civil_status').value = isDataAvailable ? data.civilStatusKey : '';
+            form.querySelector('#cl_gender').value = isDataAvailable ? data.gender : '';
+            
+            ['#cl_resident_id', '#cl_full_name', '#cl_purok', '#cl_address', '#cl_birthdate', '#cl_civil_status', '#cl_gender'].forEach(sel => {
+                const el = form.querySelector(sel);
+                if (el) el.dispatchEvent(new Event('change', {bubbles: true}));
+            });
+        } else if (form.id === 'brgy-residency-request-form') {
+            form.querySelector('#res_resident_id').value = isDataAvailable ? data.id : '';
+            form.querySelector('#res_full_name').value = isDataAvailable ? data.fullName : '';
+            form.querySelector('#res_address').value = isDataAvailable ? data.address : '';
+        } else if (form.id === 'brgy-indigency-request-form') {
+                form.querySelector('#ind_resident_id').value = isDataAvailable ? data.id : '';
+                form.querySelector('#ind_full_name').value = isDataAvailable ? data.fullName : '';
+                form.querySelector('#ind_address').value = isDataAvailable ? data.address : '';
+        } else if (form.id === 'brgy-blotter-request-form' && isDataAvailable) {
+            form.querySelector('#blot_respondent').value = isDataAvailable ? data.fullName : '';
+            form.querySelector('#blot_respondent_address').value = isDataAvailable ? data.address : '';
+        }
+    }
+    
+    function populateDocFields(doc, data) { 
+        let prefix = '';
+        if (doc.id.includes('clearance')) prefix = 'cl'; else if (doc.id.includes('residency')) prefix = 'res'; else if (doc.id.includes('indigency')) prefix = 'ind';
+        if (!prefix) return;
+        console.log(`populateDocFields for ${prefix}, data provided: ${!!(data && data.id)}`);
+
+        const isResetOrManualUpdate = !(data && data.id); 
+        const today = new Date(); 
+        
+        if (prefix === 'res' || prefix === 'ind') { 
+            setDynamicText(doc.querySelector(`#doc_${prefix}_name`), data.fullName || document.getElementById(`${prefix}_full_name`)?.value, '[Full Name]');
+            setDynamicText(doc.querySelector(`#doc_${prefix}_address`), data.address || document.getElementById(`${prefix}_address`)?.value, '[Address]');
+            
+            setDynamicText(doc.querySelector(`#doc_${prefix}_day`), getDayWithOrdinal(today.getUTCDate()), '[Day]');
+            setDynamicText(doc.querySelector(`#doc_${prefix}_month`), monthNames[today.getUTCMonth()], '[Month]');
+            setDynamicText(doc.querySelector(`#doc_${prefix}_year`), today.getUTCFullYear().toString(), '[Year]');
+            
+            const purposeValResInd = document.getElementById(`${prefix}_purpose`)?.value; 
+            setDynamicText(doc.querySelector(`#doc_${prefix}_purpose`), purposeValResInd, '[Purpose]');
+            if (prefix === 'res') {
+                const lengthVal = document.getElementById('res_length')?.value;
+                setDynamicText(doc.querySelector(`#doc_res_length`), lengthVal, '[Length]');
+            }
+            return;
+        }
+
+        if (prefix === 'cl') {
+            console.log("Populating clearance preview from form fields or provided data.");
+            setDynamicText('#doc_cl_name', data.fullName || document.getElementById('cl_full_name')?.value, '[Full Name]');
+            setDynamicText('#doc_cl_purok_val', data.purok || document.getElementById('cl_purok')?.value, '[Purok]');
+            setDynamicText('#doc_cl_address', data.address || document.getElementById('cl_address')?.value, "[Resident's Barangay Address]");
+            
+            const civilStatusField = document.getElementById('cl_civil_status');
+            let civilStatusTextToSet = data.civilStatusDisplay || civilStatusField?.options[civilStatusField.selectedIndex]?.text || '[Civil Status]';
+            if (civilStatusField && civilStatusField.value === "" && civilStatusField.selectedIndex <=0) {
+                civilStatusTextToSet = '[Civil Status]';
+            }
+            setDynamicText('#doc_cl_civil_status', civilStatusTextToSet, '[Civil Status]');
+
+            setDynamicText('#doc_cl_purpose', document.getElementById('cl_purpose')?.value, '[Purpose]'); 
+            setDynamicText('#doc_cl_cedula_val', document.getElementById('cl_cedula_no')?.value, '[Cedula No.]'); 
+
+            const certIssueDateVal = document.getElementById('cl_certificate_issue_date')?.value;
+            let certY = today.getUTCFullYear(), certM = today.getUTCMonth() + 1, certD = today.getUTCDate();
+            if (certIssueDateVal) { try { const dt = new Date(certIssueDateVal+'T00:00:00Z'); if(!isNaN(dt.getTime())){ certY=dt.getUTCFullYear(); certM=dt.getUTCMonth()+1; certD=dt.getUTCDate();}} catch(e){}}
+            updateMainDateFieldAndAllPreviewSpans(certY, certM, certD, '#cl_certificate_issue_date', '#doc_cl_day', '#doc_cl_month', '#doc_cl_year', true); // Ordinal
+
+            const cedulaIssueDateVal = document.getElementById('cl_date_issued')?.value;
+            if (cedulaIssueDateVal) { 
+                try { const dt_cedula = new Date(cedulaIssueDateVal+'T00:00:00Z'); if(!isNaN(dt_cedula.getTime())){ 
+                        updateMainDateFieldAndAllPreviewSpans(dt_cedula.getUTCFullYear(), dt_cedula.getUTCMonth()+1, dt_cedula.getUTCDate(), '#cl_date_issued', '#doc_cl_cedula_day', '#doc_cl_cedula_month', '#doc_cl_cedula_year', false); // No ordinal
+                    } else { throw new Error(); }
+                } catch(e){ 
+                    setDynamicText('#doc_cl_cedula_day', '[Day]', '[Day]'); setDynamicText('#doc_cl_cedula_month', '[Month]', '[Month]'); setDynamicText('#doc_cl_cedula_year', '[Year]', '[Year]');
+                }
+            } else { 
+                setDynamicText('#doc_cl_cedula_day', '[Day]', '[Day]'); setDynamicText('#doc_cl_cedula_month', '[Month]', '[Month]'); setDynamicText('#doc_cl_cedula_year', '[Year]', '[Year]');
+            }
+
+            const gender = data.gender || document.getElementById('cl_gender')?.value;
+            const subjectPronoun = gender === 'Male' ? 'HE' : (gender === 'Female' ? 'SHE' : '[he/she]');
+            const possessivePronoun = gender === 'Male' ? 'HIS' : (gender === 'Female' ? 'HER' : '[his/her]');
+            setDynamicText('#doc_cl_pronoun_subject', subjectPronoun, '[he/she]');
+            setDynamicText('#doc_cl_pronoun_possessive', possessivePronoun, '[his/her]');
+
+            setDynamicText(doc.querySelector('#doc_cl_or_no'), document.getElementById('cl_or_no')?.value, '[OR No.]');
+            setDynamicText(doc.querySelector('#doc_cl_amount_paid'), document.getElementById('cl_amount_paid')?.value, '[Amount Paid]');
+            setDynamicText(doc.querySelector('#doc_cl_cert_fee'), document.getElementById('cl_cert_fee')?.value, '[Cert. Fee]');
+            setDynamicText(doc.querySelector('#doc_cl_doc_stamp'), document.getElementById('cl_doc_stamp')?.value, '[Doc. Stamp]');
+
+            const paymentDateIssuedVal = document.getElementById('cl_payment_date_issued')?.value;
+            let paymentDI_Y = today.getUTCFullYear(), paymentDI_M = today.getUTCMonth() + 1, paymentDI_D = today.getUTCDate();
+            let paymentDI_usePlaceholders = true;
+            if (paymentDateIssuedVal) {
+                try {
+                    const dt_payment = new Date(paymentDateIssuedVal + 'T00:00:00Z');
+                    if (!isNaN(dt_payment.getTime())) {
+                        paymentDI_Y = dt_payment.getUTCFullYear(); paymentDI_M = dt_payment.getUTCMonth() + 1; paymentDI_D = dt_payment.getUTCDate();
+                        paymentDI_usePlaceholders = false;
+                    } else { throw new Error('Invalid date'); }
+                } catch (e) { /* use placeholders */ }
+            }
+            if (paymentDI_usePlaceholders && !document.getElementById('cl_payment_date_issued')?.value) {
+                setDynamicText('#doc_cl_payment_date_issued_day', '[Day]', '[Day]');
+                setDynamicText('#doc_cl_payment_date_issued_month', '[Month]', '[Month]');
+                setDynamicText('#doc_cl_payment_date_issued_year', '[Year]', '[Year]');
+            } else {
+                updateMainDateFieldAndAllPreviewSpans(paymentDI_Y, paymentDI_M, paymentDI_D,
+                    '#cl_payment_date_issued',
+                    '#doc_cl_payment_date_issued_day',
+                    '#doc_cl_payment_date_issued_month',
+                    '#doc_cl_payment_date_issued_year', false); // No ordinal
+            }
+        }
+    }
+
+    clearButtons.forEach(button => { 
+        button.addEventListener('click', function() {
+            console.log("Clear button clicked.");
+            const form = this.closest('.request-form');
+            clearFormFields(form, false); 
+            
+            const docId = form.id.replace('-request-form', '-document-view');
+            const doc = document.getElementById(docId);
+            if (doc) { populateDocFields(doc, {}); } 
+            
+            if (form.id === 'brgy-clearance-request-form' && doc && doc.id === 'brgy-clearance-document-view') {
+                setTimeout(() => { 
+                    console.log("Re-attaching in-place editors after clear.");
+                    const forceReattach = { forceReattach: true };
+                    const certDateConfig = { daySpanSelector: '#doc_cl_day', monthSpanSelector: '#doc_cl_month', yearSpanSelector: '#doc_cl_year', useOrdinalForDayInSpan: true, ...forceReattach };
+                    makeDatePartEditableWrapper('#doc_cl_day', 'text', '#cl_certificate_issue_date', 'day', certDateConfig);
+                    makeDatePartEditableWrapper('#doc_cl_month', 'select', '#cl_certificate_issue_date', 'month', { ...certDateConfig, optionsArray: monthNames.map((m, i) => ({value: i+1, text: m})) });
+                    makeDatePartEditableWrapper('#doc_cl_year', 'text', '#cl_certificate_issue_date', 'year', certDateConfig);
+
+                    const cedulaDateConfig = { daySpanSelector: '#doc_cl_cedula_day', monthSpanSelector: '#doc_cl_cedula_month', yearSpanSelector: '#doc_cl_cedula_year', useOrdinalForDayInSpan: false, ...forceReattach };
+                    makeDatePartEditableWrapper('#doc_cl_cedula_day', 'text', '#cl_date_issued', 'day', cedulaDateConfig);
+                    makeDatePartEditableWrapper('#doc_cl_cedula_month', 'select', '#cl_date_issued', 'month', { ...cedulaDateConfig, optionsArray: monthNames.map((m, i) => ({value: i+1, text: m})) });
+                    makeDatePartEditableWrapper('#doc_cl_cedula_year', 'text', '#cl_date_issued', 'year', cedulaDateConfig);
+                    
+                    makePreviewFieldEditable('#doc_cl_name', '#cl_full_name', 'text', { placeholder: '[Full Name]', ...forceReattach});
+                    makePreviewFieldEditable('#doc_cl_purok_val', '#cl_purok', 'text', { placeholder: '[Purok]', ...forceReattach});
+                    makePreviewFieldEditable('#doc_cl_address', '#cl_address', 'text', { placeholder: "[Resident's Barangay Address]", ...forceReattach});
+                    const civilStatusOptions = Array.from(document.querySelectorAll('#cl_civil_status option')).filter(opt => opt.value).map(opt => ({ value: opt.value, text: opt.text }));
+                    makePreviewFieldEditable('#doc_cl_civil_status', '#cl_civil_status', 'select', { optionsArray: civilStatusOptions, placeholder: '[Civil Status]', ...forceReattach });
+                    makePreviewFieldEditable('#doc_cl_purpose', '#cl_purpose', 'text', { placeholder: '[Purpose]', ...forceReattach });
+                    makePreviewFieldEditable('#doc_cl_cedula_val', '#cl_cedula_no', 'text', { placeholder: '[Cedula No.]', ...forceReattach });
+
+                    makePreviewFieldEditable('#doc_cl_or_no', '#cl_or_no', 'text', { placeholder: '[OR No.]', ...forceReattach });
+                    makePreviewFieldEditable('#doc_cl_amount_paid', '#cl_amount_paid', 'text', { placeholder: '[Amount Paid]', ...forceReattach });
+                    makePreviewFieldEditable('#doc_cl_cert_fee', '#cl_cert_fee', 'text', { placeholder: '[Cert. Fee]', ...forceReattach });
+                    makePreviewFieldEditable('#doc_cl_doc_stamp', '#cl_doc_stamp', 'text', { placeholder: '[Doc. Stamp]', ...forceReattach });
+
+                    const paymentDateConfig = {
+                        daySpanSelector: '#doc_cl_payment_date_issued_day',
+                        monthSpanSelector: '#doc_cl_payment_date_issued_month',
+                        yearSpanSelector: '#doc_cl_payment_date_issued_year',
+                        useOrdinalForDayInSpan: false, 
+                        ...forceReattach
+                    };
+                    makeDatePartEditableWrapper('#doc_cl_payment_date_issued_day', 'text', '#cl_payment_date_issued', 'day', paymentDateConfig);
+                    makeDatePartEditableWrapper('#doc_cl_payment_date_issued_month', 'select', '#cl_payment_date_issued', 'month', { ...paymentDateConfig, optionsArray: monthNames.map((m, i) => ({value: i+1, text: m})) });
+                    makeDatePartEditableWrapper('#doc_cl_payment_date_issued_year', 'text', '#cl_payment_date_issued', 'year', paymentDateConfig);
+
+                }, 150);
+            }
+        });
+    });
+
+    function clearFormFields(form, isInitialSilentClear) {
+        console.log(`Clearing form fields for ${form.id}. InitialSilent: ${isInitialSilentClear}`);
+
+        if (!isInitialSilentClear && form.querySelector('.resident-search-input')) {
+            const searchInput = form.querySelector('.resident-search-input');
+            if (searchInput) searchInput.value = '';
+            const resultsList = form.querySelector('.search-results-list');
+            if (resultsList) { resultsList.innerHTML = ''; resultsList.classList.add('hidden'); }
+        }
+
+        if (form.id === 'brgy-clearance-request-form') {
+            const today = new Date();
+            const year = today.getUTCFullYear();
+            const month = (today.getUTCMonth() + 1).toString().padStart(2, '0');
+            const day = today.getUTCDate().toString().padStart(2, '0');
+            const todayString = `${year}-${month}-${day}`;
+
+            const residentAndPurposeFields = [
+                '#cl_resident_id', '#cl_full_name', '#cl_purok', '#cl_address',
+                '#cl_birthdate', '#cl_civil_status', '#cl_gender', 
+                '#cl_purpose', '#cl_cedula_no'
+            ];
+
+            residentAndPurposeFields.forEach(selector => {
+                const el = form.querySelector(selector);
+                if (el) {
+                    if (el.tagName === 'SELECT') el.value = ''; else el.value = '';
+                }
+            });
+
+            const certIssueDateInput = form.querySelector('#cl_certificate_issue_date');
+            if (certIssueDateInput) {
+                certIssueDateInput.value = todayString;
+            }
+
+            const orNoInput = form.querySelector('#cl_or_no');
+            const amountPaidInput = form.querySelector('#cl_amount_paid');
+            const certFeeInput = form.querySelector('#cl_cert_fee');
+            const docStampInput = form.querySelector('#cl_doc_stamp');
+            const paymentDateIssuedInput = form.querySelector('#cl_payment_date_issued');
+            const cedulaDateInput = form.querySelector('#cl_date_issued');
+
+            if (isInitialSilentClear) { 
+                if (orNoInput) orNoInput.value = ''; 
+                if (amountPaidInput) amountPaidInput.value = 'Php80.00';
+                if (certFeeInput) certFeeInput.value = 'Php50.00';
+                if (docStampInput) docStampInput.value = 'Php30.00';
+                if (paymentDateIssuedInput) paymentDateIssuedInput.value = todayString;
+                if (cedulaDateInput) cedulaDateInput.value = todayString; 
+            }
+
+            const allPotentiallyAffectedFields = [
+                ...residentAndPurposeFields, 
+                '#cl_certificate_issue_date', 
+                '#cl_or_no', '#cl_amount_paid', '#cl_cert_fee', '#cl_doc_stamp', 
+                '#cl_payment_date_issued', '#cl_date_issued'
+            ];
+
+            allPotentiallyAffectedFields.forEach(selector => {
+                const el = form.querySelector(selector);
+                if (el) {
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+
+        } else {
+            const formInputsToClearElse = form.querySelectorAll('input[type="text"], input[type="date"], input[type="hidden"], input[type="number"], select, textarea');
+            formInputsToClearElse.forEach(input => {
+                if (input.name === 'csrfmiddlewaretoken') return;
+                input.value = '';
+            });
+            formInputsToClearElse.forEach(input => {
+                    if (input.name !== 'csrfmiddlewaretoken' && input.type !== 'hidden') { 
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+            });
+        }
+    }
+
+    printButtons.forEach(button => { 
+        button.addEventListener('click', function() {
+            const docView = this.closest('.document-view');
+            const docPaper = docView.querySelector('.document-paper');
+            if (docPaper) {
+                if (activeInlineEditor) {
+                    const MOCK_EVENT = { preventDefault: () => {}, stopPropagation: () => {} };
+                    const inputElement = activeInlineEditor.parentNode.querySelector('input, select');
+                    if (inputElement) {
+                        const blurHandler = inputElement.onblur; 
+                        if (blurHandler) {
+                            inputElement.blur(); 
+                        } else { 
+                            try {
+                                const formFieldSelector = activeInlineEditor.dataset.formInputSelector; 
+                                const mainFormField = formFieldSelector ? document.querySelector(formFieldSelector) : null;
+                                if (mainFormField) mainFormField.value = inputElement.value; 
+                                activeInlineEditor.style.display = '';
+                                if (inputElement.parentNode) inputElement.parentNode.removeChild(inputElement);
+                            } catch (e) { console.warn("Error manually closing editor:", e); }
+                        }
+                    }
+                    activeInlineEditor = null; 
+                }
+
+                docPaper.querySelectorAll('.editable-in-preview input, .editable-in-preview select').forEach(inp => {
+                    const spanParent = inp.parentNode; 
+                    const span = Array.from(spanParent.children).find(child => child !== inp && child.style.display === 'none');
+                    if(span) span.style.display = ''; 
+                    inp.remove(); 
+                });
+                
+                docPaper.classList.add('print-area');
+                window.print();
+            }
+        });
+    });
+
+    window.onafterprint = function() { 
+        document.querySelectorAll('.print-area').forEach(el => {
+            el.classList.remove('print-area');
+        });
+    };
+
+    document.querySelectorAll('.search-results-list').forEach(list => list.classList.add('hidden'));
+    console.log("Script initialized.");
+});
+</script>
+</body>
+</html>

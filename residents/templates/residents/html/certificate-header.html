@@ -1,0 +1,12 @@
+{% load static %}
+
+<div class="certificate-header">
+    <img src="{% static 'residents/img/_logo_biaknabato.png' %}" alt="Logo" class="logo-left">
+    <img src="{% static 'residents/img/_logo_lacastellana.png' %}" alt="Seal" class="logo-right">
+    <p>Republic of the Philippines</p>
+    <p>Municipality of {{ MUNICIPALITY_NAME|default:'[Your Municipality Name]' }}</p>
+    <p>Province of {{ PROVINCE_NAME|default:'[Your Province Name]' }}</p>
+    <p style="text-transform:uppercase;">BARANGAY {{ BARANGAY_NAME|default:'[Your Barangay Name]' }}</p>
+    <p><i>Office of the Punong Barangay</i></p>
+    <hr>
+</div>

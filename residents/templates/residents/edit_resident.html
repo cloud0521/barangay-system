@@ -1,0 +1,29 @@
+{% load static %} {# Load the static template tags #}
+<!DOCTYPE html>
+<html>
+<head>
+   {% include 'residents/html/header.html' %}
+</head>
+<body>
+    <div class="container"> {# Wrap content in a container for better layout #}
+      {% include 'residents/html/header_nav_bar.html' %}
+
+    <div class="form-container"> {# Use the main container from style.css #}
+        <h1>{{ page_title }}</h1>
+        <div class="data">
+            <form method="post">
+                {% csrf_token %} {# Security token #}
+                {{ form.as_p }} {# Render form fields wrapped in <p> tags, styled by style.css #}
+                    <button type="submit" class="spanned-item">Save Changes</button>
+                    {# Use the .back-link class for consistency and styling #}
+            </form>
+            <a href="{{ next_url }}" class="back-link">Cancel</a>
+        </div> {# Close .form-container #}
+
+        {# The back-link below the form container might be redundant if the cancel link is sufficient, but keeping it here just in case #}
+        {# <p><a href="{% url 'index' %}" >Back to Residents List</a></p> #}
+</div>
+    </div> {# Close container #}
+  <script src="{% static 'residents/js/script.js' %}"></script>
+</body>
+</html>

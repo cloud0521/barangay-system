@@ -1,0 +1,21 @@
+    <nav class="navbar">
+        <button class="hamburger-icon" id="hamburger-icon" aria-label="Toggle navigation" aria-expanded="false">
+            <i class="fas fa-bars"></i>
+        </button>
+        <ul id="navbar-links">
+            {% if user.is_authenticated %}
+                <li><a href="{% url 'index' %}" {% if request.resolver_match.url_name == 'index' %}class="active"{% endif %}>Residents</a></li>
+                <li><a href="{% url 'transactions_list' %}" {% if request.resolver_match.url_name == 'transactions_list' %}class="active"{% endif %}>Transactions</a></li>
+                <li><a href="{% url 'reporting_page' %}" {% if request.resolver_match.url_name == 'reporting_page' %}class="active"{% endif %}>Reporting</a></li>
+                <li>
+                    {# Give the form the ID #}
+                    <form id="logout-form-interactive" method="post" action="{% url 'logout' %}"> 
+                        {% csrf_token %} {# Important for security #}
+                        <button type="submit" class="logout-button">Logout ({{ user.username }})</button>
+                    </form>
+                </li>
+            {% else %}
+                <li><a href="{% url 'login' %}">Login</a></li>
+            {% endif %}
+        </ul>
+    </nav>

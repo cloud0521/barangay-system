@@ -1,0 +1,25 @@
+{% load static %} {# Load the static template tags #}
+<!DOCTYPE html>
+<html>
+<head>
+    {% include 'residents/html/header.html' %}
+</head>
+<body>
+    <div class="container"> {# Wrap content in a container for better layout #}
+        {% include 'residents/html/header_nav_bar.html' %}
+        
+        <div class="content">
+    <h1>{{ page_title }}</h1>
+    <div class="data">
+    <p>Are you sure you want to delete resident "{{ resident.full_name }}"?</p>
+
+    <form method="post">
+        {% csrf_token %} {# Security token #}
+        <button type="submit" class="warning">Yes, Delete</button>
+        <a href="{{ next_url }}">Cancel</a> {# Link back to the detail page #}
+    </form>
+    </div>
+    <script src="{% static 'residents/js/script.js' %}"></script>
+</div>
+</body>
+</html>

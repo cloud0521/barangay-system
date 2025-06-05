@@ -1,0 +1,718 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    {% include 'residents/html/header.html' %}
+    <style>
+        /* Optional: Style for disabled checkboxes for better UX */
+        label:has(input[type="checkbox"]:disabled) {
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        #summaryContainer {
+             margin: 10px 0;
+             font-weight: bold;
+             padding-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container"> {# Wrap content in a container for better layout #}
+    {% include 'residents/html/header_nav_bar.html' %}
+
+    <div class="content">
+        <h1>{{ page_title }}</h1>
+        <div id="residents-list-container">
+
+            {# ==================== INDEX PAGE ==================== #}
+            {% if request.resolver_match.url_name == 'index' %}
+                <form method="get" class="search-form" id="search-form">
+                    <input type="text" class="q" name="q" placeholder="Search residents..." value="{{ request.GET.q }}" id="search-input">
+                    <input type="submit" value="search"/>
+                </form>
+                <p><a href="{% url 'add_resident' %}" class="add-resident-link">Add New Resident</a></p>
+                {% if residents_list %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Full Name</th>
+                                <th>Address</th>
+                                <th>Tier</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for resident in residents_list %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'resident_detail' resident.pk %}">
+                                        {{ resident.full_name|default:"N/A" }}
+                                    </a>
+                                </td>
+                                <td>{{ resident.address|default:"N/A" }}</td>
+                                <td>{{ resident.tier|default:"N/A" }}</td>
+                                <td>
+                                    <div class="resident-actions">
+                                        <a href="{% url 'edit_resident' resident.pk %}?next={{ request.get_full_path|urlencode }}" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'delete_resident' resident.pk %}?next={{ request.get_full_path|urlencode }}" title="Delete">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No residents found.</p>
+                {% endif %}
+
+            {# ==================== TRANSACTIONS PAGE ==================== #}
+            {% elif request.resolver_match.url_name == 'transactions_list' %}
+                <p>This is the Transactions page. Content to be added here.</p>
+
+            {# ==================== REPORTING PAGE ==================== #}
+            {% elif request.resolver_match.url_name == 'reporting_page' %}
+
+                <div id="controlsContainer" class="no-print">
+                    <div> {# This div now contains only the column controls #}
+                        <strong>Show/Hide Columns:</strong><br>
+                        <div id="columnToggleContainer">
+                           {# Checkboxes will be generated here by JS #}
+                        </div>
+                        <div class="toggle-all-buttons">
+                           <button id="checkAllColumnsButton">Check All</button>
+                           <button id="uncheckAllColumnsButton">Uncheck All</button>
+                        </div>
+                    </div>
+                     {# This div now contains the main actions and will appear below #}
+                    <div id="reportingActions">
+                        <strong>Actions:</strong><br>
+                        <button id="printTableButton">Print Selected</button>
+                        <button id="exportCsvButton">Export to CSV</button>
+                        <button id="clearFiltersButton">Clear All Filters</button>
+                    </div>
+                </div>
+
+                {# MODIFIED: Changed text to "Residents Selected" #}
+                <div id="summaryContainer" class="no-print">
+                    <span id="rowCount">0</span> Residents Selected
+                </div>
+
+                {% if all_residents_for_reporting %}
+                    <div id="printableTableArea">
+                        <div style="overflow-x: auto;">
+                            <table id="reportingTable">
+                                <thead>
+                                    <tr>
+                                        <th data-column-index="0" data-column-name="Print?" class="no-sort no-filter no-print">
+                                            <span class="column-header-content">Print?</span>
+                                            <br>
+                                            <button id="toggleAllPrintRowsButton" class="no-print" data-next-action="check" style="font-size: 0.8em; padding: 2px 5px; margin-top: 2px; cursor:pointer;">Check All</button>
+                                            <button id="undoActionButton" class="no-print" style="font-size: 0.8em; padding: 2px 5px; margin-top: 2px; cursor:pointer; display: none; margin-left: 5px;">Undo</button>
+                                        </th>
+                                        <th data-column-index="1" data-column-name="Full Name" data-sort-type="text">
+                                            <span class="column-header-content">
+                                                <span class="sort-icon no-print"><i class="fas fa-sort"></i></span>Full Name
+                                            </span>
+                                            <br><input type="text" class="filter-input no-print" placeholder="Filter...">
+                                        </th>
+                                        <th data-column-index="2" data-column-name="Date of Birth" data-sort-type="date">
+                                            <span class="column-header-content">
+                                                <span class="sort-icon no-print"><i class="fas fa-sort"></i></span>Date of Birth
+                                            </span>
+                                            <br><input type="text" class="filter-input no-print" placeholder="YYYY-MM-DD or Age">
+                                        </th>
+                                        <th data-column-index="3" data-column-name="Age" data-sort-type="number">
+                                            <span class="column-header-content">
+                                                <span class="sort-icon no-print"><i class="fas fa-sort"></i></span>Age
+                                            </span>
+                                            <br><input type="text" class="filter-input no-print" placeholder="e.g. 25, 30-40">
+                                        </th>
+                                        <th data-column-index="4" data-column-name="Gender" data-sort-type="text">
+                                            <span class="column-header-content">
+                                                <span class="sort-icon no-print"><i class="fas fa-sort"></i></span>Gender
+                                            </span>
+                                            <br><select class="filter-input filter-select no-print"><option value="">All</option></select>
+                                        </th>
+                                        <th data-column-index="5" data-column-name="Purok" data-sort-type="text">
+                                            <span class="column-header-content">
+                                                <span class="sort-icon no-print"><i class="fas fa-sort"></i></span>Purok
+                                            </span>
+                                             <br><select class="filter-input filter-select no-print"><option value="">All</option></select>
+                                        </th>
+                                        <th data-column-index="6" data-column-name="Religion" data-sort-type="text">
+                                            <span class="column-header-content">
+                                                <span class="sort-icon no-print"><i class="fas fa-sort"></i></span>Religion
+                                            </span>
+                                            <br><input type="text" class="filter-input no-print" placeholder="Filter...">
+                                        </th>
+                                        <th data-column-index="7" data-column-name="Email Address" data-sort-type="text">
+                                            <span class="column-header-content">
+                                                <span class="sort-icon no-print"><i class="fas fa-sort"></i></span>Email Address
+                                            </span>
+                                            <br><input type="text" class="filter-input no-print" placeholder="Filter...">
+                                        </th>
+                                        <th data-column-index="8" data-column-name="Nationality" data-sort-type="text">
+                                            <span class="column-header-content">
+                                                <span class="sort-icon no-print"><i class="fas fa-sort"></i></span>Nationality
+                                            </span>
+                                            <br><input type="text" class="filter-input no-print" placeholder="Filter...">
+                                        </th>
+                                        <th data-column-index="9" data-column-name="Civil Status" data-sort-type="text">
+                                            <span class="column-header-content">
+                                                <span class="sort-icon no-print"><i class="fas fa-sort"></i></span>Civil Status
+                                            </span>
+                                             <br><select class="filter-input filter-select no-print"><option value="">All</option></select>
+                                        </th>
+                                        <th data-column-index="10" data-column-name="Occupation" data-sort-type="text">
+                                            <span class="column-header-content">
+                                                <span class="sort-icon no-print"><i class="fas fa-sort"></i></span>Occupation
+                                            </span>
+                                            <br><input type="text" class="filter-input no-print" placeholder="Filter...">
+                                        </th>
+                                        <th data-column-index="11" data-column-name="Contact Information" data-sort-type="text">
+                                            <span class="column-header-content">
+                                                <span class="sort-icon no-print"><i class="fas fa-sort"></i></span>Contact Info
+                                            </span>
+                                            <br><input type="text" class="filter-input no-print" placeholder="Filter...">
+                                        </th>
+                                        <th data-column-index="12" data-column-name="Address" data-sort-type="text">
+                                            <span class="column-header-content">
+                                                <span class="sort-icon no-print"><i class="fas fa-sort"></i></span>Address
+                                            </span>
+                                            <br><input type="text" class="filter-input no-print" placeholder="Filter...">
+                                        </th>
+                                        <th data-column-index="13" data-column-name="Place of Birth" data-sort-type="text">
+                                            <span class="column-header-content">
+                                                <span class="sort-icon no-print"><i class="fas fa-sort"></i></span>Place of Birth
+                                            </span>
+                                            <br><input type="text" class="filter-input no-print" placeholder="Filter...">
+                                        </th>
+                                        <th data-column-index="14" data-column-name="Notes" data-sort-type="text">
+                                            <span class="column-header-content">
+                                                <span class="sort-icon no-print"><i class="fas fa-sort"></i></span>Notes
+                                            </span>
+                                            <br><input type="text" class="filter-input no-print" placeholder="Filter...">
+                                        </th>
+                                        <th data-column-index="15" data-column-name="Voter Status" data-sort-type="text">
+                                            <span class="column-header-content">
+                                                <span class="sort-icon no-print"><i class="fas fa-sort"></i></span>Voter Status
+                                            </span>
+                                             <br><select class="filter-input filter-select no-print"><option value="">All</option><option value="Yes">Yes</option><option value="No">No</option></select>
+                                        </th>
+                                        <th data-column-index="16" data-column-name="Tier" data-sort-type="number">
+                                            <span class="column-header-content">
+                                                <span class="sort-icon no-print"><i class="fas fa-sort"></i></span>Tier
+                                            </span>
+                                            <br><input type="text" class="filter-input no-print" placeholder="e.g. 1, 3-5">
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for resident in all_residents_for_reporting %}
+                                    <tr data-resident-pk="{{ resident.pk }}">
+                                        <td class="no-print cell-print-checkbox"> <input type="checkbox" class="print-row-checkbox"></td>
+                                        <td>
+                                            <a href="{% url 'resident_detail' resident.pk %}">
+                                                {{ resident.full_name|default:"N/A" }}
+                                            </a>
+                                        </td>
+                                        <td data-dob="{{ resident.date_of_birth|date:"Y-m-d"|default:"N/A" }}">{{ resident.date_of_birth|date:"Y-m-d"|default:"N/A" }}</td>
+                                        <td data-age="">{# Age will be calculated by JS #}</td>
+                                        <td>{{ resident.gender|default:"N/A" }}</td>
+                                        <td>{{ resident.purok|default:"N/A" }}</td>
+                                        <td>{{ resident.religion|default:"N/A" }}</td>
+                                        <td>{{ resident.email_address|default:"N/A" }}</td>
+                                        <td>{{ resident.nationality|default:"N/A" }}</td>
+                                        <td>{{ resident.civil_status|default:"N/A" }}</td>
+                                        <td>{{ resident.occupation|default:"N/A" }}</td>
+                                        <td>{{ resident.contact_information|default:"N/A" }}</td>
+                                        <td>{{ resident.address|default:"N/A" }}</td>
+                                        <td>{{ resident.place_of_birth|default:"N/A" }}</td>
+                                        <td>{{ resident.notes|default:"N/A" }}</td>
+                                        <td>{% if resident.voter_status %}Yes{% else %}No{% endif %}</td>
+                                        <td>{{ resident.tier|default:"N/A" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% else %}
+                    <p>No resident data available for reporting.</p>
+                {% endif %}
+
+            {# ==================== OTHER PAGES (IF ANY) ==================== #}
+            {% else %}
+                <p>Welcome to the Residents Management System.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+        // Logout Confirmation Logic
+        const logoutForm = document.getElementById('logout-form-interactive');
+        if (logoutForm) {
+            logoutForm.addEventListener('submit', function(event) {
+                const reportingTableForLogout = document.getElementById('reportingTable');
+                let anyResidentsChecked = false;
+                if (reportingTableForLogout && reportingTableForLogout.querySelector('tbody')) {
+                    reportingTableForLogout.querySelectorAll('tbody .print-row-checkbox:checked').forEach(cb => {
+                        anyResidentsChecked = true;
+                    });
+                }
+                if (anyResidentsChecked) {
+                    if (!confirm("Are you sure you want to logout? This will uncheck all selected residents.")) {
+                        event.preventDefault(); // Prevent logout if user cancels
+                    }
+                }
+            });
+        }
+
+        // ==================== REPORTING PAGE SCRIPT ====================
+        const reportingTable = document.getElementById('reportingTable');
+        if (!reportingTable) return; // Exit if not on reporting page
+
+        // --- Get All DOM Elements ---
+        const columnToggleContainer = document.getElementById('columnToggleContainer');
+        const printTableButton = document.getElementById('printTableButton');
+        const checkAllColumnsButton = document.getElementById('checkAllColumnsButton');
+        const uncheckAllColumnsButton = document.getElementById('uncheckAllColumnsButton');
+        const toggleAllPrintRowsButton = document.getElementById('toggleAllPrintRowsButton');
+        const tbody = reportingTable.querySelector('tbody');
+        const undoButton = document.getElementById('undoActionButton');
+        const exportCsvButton = document.getElementById('exportCsvButton');
+        const clearFiltersButton = document.getElementById('clearFiltersButton');
+        const rowCountSpan = document.getElementById('rowCount');
+        const tableHeaders = Array.from(reportingTable.querySelectorAll('thead th[data-column-index]'));
+        const filterInputs = Array.from(reportingTable.querySelectorAll('thead .filter-input'));
+
+        // --- State Variables ---
+        let checkStateHistory = [];
+        const MAX_UNDO = 3;
+        let columnCheckboxes = [];
+        let printCheckboxRef = null;
+        let fullNameCheckbox = null;
+        const SELECT_FILTER_INDICES = [4, 5, 9, 15]; // Indices for Gender, Purok, Civil Status, Voter Status
+
+        // --- Helper Functions ---
+
+        function calculateAge(dateString) { /* ... (Unchanged) ... */
+             if (!dateString || dateString === "N/A" || dateString.toLowerCase() === "none") return "N/A";
+            try {
+                const birthDate = new Date(dateString);
+                if (isNaN(birthDate.getTime())) return "N/A";
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+                return age >= 0 ? age : "N/A";
+            } catch (e) { return "N/A"; }
+        }
+        function toggleColumnVisibility(columnIndex, show, isInitialSetup = false) { /* ... (Unchanged) ... */
+            const headerToToggle = reportingTable.querySelector(`thead th[data-column-index="${columnIndex}"]`);
+            if (headerToToggle) headerToToggle.style.display = show ? '' : 'none';
+            reportingTable.querySelectorAll('tbody tr').forEach(row => {
+                if (row.cells && row.cells.length > columnIndex) {
+                    const cellToToggle = row.cells[columnIndex];
+                    if (cellToToggle) cellToToggle.style.display = show ? '' : 'none';
+                }
+            });
+            if (!isInitialSetup) applyFiltersAndSort();
+        }
+        function updateBaseCheckboxesState() { /* ... (Unchanged) ... */
+            if (!fullNameCheckbox || !printCheckboxRef) return;
+            let anyOtherChecked = false;
+            columnCheckboxes.forEach(cb => {
+                const idx = parseInt(cb.dataset.controlsColumn);
+                if (idx > 1 && cb.checked) anyOtherChecked = true;
+            });
+
+            if (anyOtherChecked) {
+                if (!printCheckboxRef.checked) { printCheckboxRef.checked = true; toggleColumnVisibility(0, true, false); }
+                printCheckboxRef.disabled = true;
+                if (!fullNameCheckbox.checked) { fullNameCheckbox.checked = true; toggleColumnVisibility(1, true, false); }
+                fullNameCheckbox.disabled = true;
+            } else {
+                printCheckboxRef.disabled = false;
+                fullNameCheckbox.disabled = false;
+            }
+        }
+        function updateToggleAllPrintButton() { /* ... (Unchanged) ... */
+            if (!tbody || !toggleAllPrintRowsButton) return;
+            let allVisibleAreChecked = true, hasVisibleRows = false;
+            tbody.querySelectorAll('tr').forEach(row => {
+                if (window.getComputedStyle(row).display !== 'none') {
+                    hasVisibleRows = true;
+                    const cb = row.querySelector('.print-row-checkbox');
+                    if (cb && !cb.checked) allVisibleAreChecked = false;
+                }
+            });
+            if (!hasVisibleRows) { resetUndo(); }
+            if (!hasVisibleRows) {
+                toggleAllPrintRowsButton.textContent = 'Check All';
+                toggleAllPrintRowsButton.dataset.nextAction = 'check';
+                return;
+            }
+            toggleAllPrintRowsButton.textContent = allVisibleAreChecked ? 'Uncheck All' : 'Check All';
+            toggleAllPrintRowsButton.dataset.nextAction = allVisibleAreChecked ? 'uncheck' : 'check';
+        }
+        function parseNumericRangeFilter(filterString) { /* ... (Unchanged) ... */
+            const allowedValues = new Set();
+            if (!filterString || typeof filterString !== 'string') return allowedValues;
+            filterString.split(',').forEach(term => {
+                term = term.trim();
+                if (term.includes('-')) {
+                    const [startStr, endStr] = term.split('-');
+                    const start = parseInt(startStr.trim(), 10);
+                    const end = parseInt(endStr.trim(), 10);
+                    if (!isNaN(start) && !isNaN(end) && start <= end) {
+                        for (let i = start; i <= end; i++) allowedValues.add(i);
+                    }
+                } else {
+                    const value = parseInt(term, 10);
+                    if (!isNaN(value)) allowedValues.add(value);
+                }
+            });
+            return allowedValues;
+        }
+
+        // --- Undo Functions ---
+        function resetUndo() { /* ... (Unchanged) ... */
+            checkStateHistory = [];
+            updateUndoButton();
+        }
+        function updateUndoButton() { /* ... (Unchanged) ... */
+            if (checkStateHistory.length > 0) {
+                undoButton.textContent = `Undo (${checkStateHistory.length})`;
+                undoButton.style.display = 'inline-block';
+            } else {
+                undoButton.style.display = 'none';
+            }
+        }
+        function getCurrentCheckedPks() { /* ... (Unchanged) ... */
+            let pks = [];
+            tbody.querySelectorAll('tr .print-row-checkbox:checked').forEach(cb => {
+                 pks.push(cb.closest('tr').dataset.residentPk);
+            });
+            return pks;
+        }
+        function pushStateToHistory(state) { /* ... (Unchanged) ... */
+            checkStateHistory.push(state);
+            if (checkStateHistory.length > MAX_UNDO) {
+                checkStateHistory.shift();
+            }
+            updateUndoButton();
+        }
+        function applyState(pks) { /* ... (Unchanged - now calls updateSelectedCount) ... */
+            tbody.querySelectorAll('tr .print-row-checkbox').forEach(cb => {
+                cb.checked = pks.includes(cb.closest('tr').dataset.residentPk);
+            });
+            updateSelectedCount(); // MODIFIED: Update count after applying state
+        }
+
+        // --- Populate Select Filters ---
+        function populateSelectFilters() { /* ... (Unchanged) ... */
+            const uniqueValues = {};
+            SELECT_FILTER_INDICES.forEach(index => uniqueValues[index] = new Set());
+
+            tbody.querySelectorAll('tr').forEach(row => {
+                SELECT_FILTER_INDICES.forEach(index => {
+                    if (row.cells[index]) {
+                         const value = row.cells[index].textContent.trim();
+                         if(value && value !== "N/A") uniqueValues[index].add(value);
+                    }
+                });
+            });
+
+            SELECT_FILTER_INDICES.forEach(index => {
+                const select = reportingTable.querySelector(`thead th[data-column-index="${index}"] .filter-select`);
+                if (select) {
+                    while (select.options.length > 1) { select.remove(1); }
+                    Array.from(uniqueValues[index]).sort().forEach(value => {
+                        const option = document.createElement('option');
+                        option.value = value;
+                        option.textContent = value;
+                        select.appendChild(option);
+                    });
+                }
+            });
+        }
+
+        // --- MODIFIED: New function to update Selected Count ---
+        function updateSelectedCount() {
+            const selectedCount = tbody.querySelectorAll('.print-row-checkbox:checked').length;
+            rowCountSpan.textContent = selectedCount;
+        }
+
+        // --- Main Filtering and Sorting ---
+        function applyFiltersAndSort() { /* ... (Unchanged - Now calls updateVisibleCount) ... */
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            let activeSort = { index: -1, order: 'none', type: 'text' };
+            tableHeaders.forEach(header => {
+                if (header.dataset.sortOrder && header.dataset.sortOrder !== 'none') {
+                    activeSort = { index: parseInt(header.dataset.columnIndex), order: header.dataset.sortOrder, type: header.dataset.sortType || 'text' };
+                }
+            });
+
+            // Sorting Logic
+            const sortColumnHeader = reportingTable.querySelector(`thead th[data-column-index="${activeSort.index}"]`);
+            if (activeSort.index > 0 && sortColumnHeader && sortColumnHeader.style.display !== 'none') {
+                rows.sort((rowA, rowB) => {
+                    const cellA = rowA.cells[activeSort.index], cellB = rowB.cells[activeSort.index];
+                    let valA = cellA ? (cellA.dataset.age || cellA.textContent.trim()) : '';
+                    let valB = cellB ? (cellB.dataset.age || cellB.textContent.trim()) : '';
+
+                    if (activeSort.type === 'number') {
+                         valA = parseFloat(valA) || (valA === "N/A" || valA === "" ? (activeSort.order === 'asc' ? Infinity : -Infinity) : 0);
+                         valB = parseFloat(valB) || (valB === "N/A" || valB === "" ? (activeSort.order === 'asc' ? Infinity : -Infinity) : 0);
+                    } else if (activeSort.type === 'date') {
+                        valA = new Date(valA).getTime() || (valA === "N/A" || valA === "" ? (activeSort.order === 'asc' ? Infinity : -Infinity) : 0);
+                        valB = new Date(valB).getTime() || (valB === "N/A" || valB === "" ? (activeSort.order === 'asc' ? Infinity : -Infinity) : 0);
+                    }
+                    else { valA = valA.toLowerCase(); valB = valB.toLowerCase(); }
+                    if (valA < valB) return activeSort.order === 'asc' ? -1 : 1;
+                    if (valA > valB) return activeSort.order === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }
+
+            // Filtering Logic
+            const filterValues = filterInputs.map(input => ({
+                 value: input.value.trim().toLowerCase(),
+                 columnIndex: parseInt(input.closest('th').dataset.columnIndex)
+            }));
+
+            let visibleRowCount = 0;
+            rows.forEach(row => {
+                let displayRow = true;
+                for (const filter of filterValues) {
+                    const filterHeader = reportingTable.querySelector(`thead th[data-column-index="${filter.columnIndex}"]`);
+                    if (filter.value && filter.columnIndex > 0 && filterHeader && filterHeader.style.display !== 'none') {
+                        const cell = row.cells[filter.columnIndex];
+                        if (!cell) { displayRow = false; break; }
+
+                        let cellValue = cell.textContent.trim().toLowerCase();
+                        let filterValue = filter.value;
+
+                        if (filter.columnIndex === 3 || filter.columnIndex === 16) { // Age or Tier (Numeric Range)
+                            const allowed = parseNumericRangeFilter(filterValue);
+                            const numVal = parseInt(filter.columnIndex === 3 ? cell.dataset.age : cellValue, 10);
+                            if (allowed.size > 0 && (isNaN(numVal) || !allowed.has(numVal))) { displayRow = false; break; }
+                        } else if (filter.columnIndex === 2) { // DOB
+                             const ageValue = cell.nextElementSibling.dataset.age;
+                             if (!cellValue.includes(filterValue) && !(ageValue && ageValue.includes(filterValue))) { displayRow = false; break; }
+                        } else if (SELECT_FILTER_INDICES.includes(filter.columnIndex)) { // Select filters
+                            if (cellValue !== filterValue) { displayRow = false; break; }
+                        } else { // Text filters
+                            if (!cellValue.includes(filterValue)) { displayRow = false; break; }
+                        }
+                    }
+                }
+                row.style.display = displayRow ? '' : 'none';
+                if (displayRow) visibleRowCount++;
+            });
+
+            tbody.innerHTML = '';
+            rows.forEach(row => tbody.appendChild(row));
+            updateToggleAllPrintButton();
+            // We don't update selected count here, only visible count (if we had one)
+            // rowCountSpan.textContent = visibleRowCount; // This line is removed/changed
+            updateSelectedCount(); // Ensure selected count is up-to-date if needed, though it shouldn't change here
+        }
+
+        // --- Export to CSV ---
+        function exportToCsv() { /* ... (Unchanged) ... */
+             let csv = [];
+            const headers = [];
+            reportingTable.querySelectorAll('thead th').forEach(th => {
+                const index = parseInt(th.dataset.columnIndex);
+                if (th.style.display !== 'none' && index > 0) {
+                     headers.push(`"${th.dataset.columnName.replace(/"/g, '""')}"`);
+                }
+            });
+            csv.push(headers.join(','));
+
+            tbody.querySelectorAll('tr').forEach(row => {
+                if (window.getComputedStyle(row).display !== 'none') {
+                    const rowData = [];
+                    row.querySelectorAll('td').forEach((td, index) => {
+                        const th = reportingTable.querySelector(`thead th[data-column-index="${index}"]`);
+                         if (th && th.style.display !== 'none' && index > 0) {
+                            rowData.push(`"${td.textContent.trim().replace(/"/g, '""')}"`);
+                         }
+                    });
+                    csv.push(rowData.join(','));
+                }
+            });
+
+            const csvContent = "data:text/csv;charset=utf-8," + csv.join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "residents_report.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- Initial Setup ---
+        tbody.querySelectorAll('tr').forEach(row => { /* ... (Unchanged) ... */
+            const dobCell = row.cells[2]; const ageCell = row.cells[3];
+            if (dobCell && ageCell) {
+                const age = calculateAge(dobCell.dataset.dob);
+                ageCell.textContent = age; ageCell.dataset.age = age;
+            }
+        });
+        populateSelectFilters();
+        tableHeaders.forEach(header => { /* ... (Unchanged) ... */
+            const columnIndex = parseInt(header.dataset.columnIndex), columnName = header.dataset.columnName || 'Unnamed';
+            const label = document.createElement('label'), checkbox = document.createElement('input');
+            checkbox.type = 'checkbox'; checkbox.dataset.controlsColumn = columnIndex; checkbox.checked = false;
+            if (columnIndex === 0) { printCheckboxRef = checkbox; checkbox.checked = false; }
+            if (columnIndex === 1) { fullNameCheckbox = checkbox; checkbox.checked = false; }
+            label.appendChild(checkbox); label.appendChild(document.createTextNode(' ' + columnName));
+            columnToggleContainer.appendChild(label); columnCheckboxes.push(checkbox);
+            checkbox.addEventListener('change', function() { toggleColumnVisibility(parseInt(this.dataset.controlsColumn), this.checked, false); updateBaseCheckboxesState(); resetUndo(); });
+            toggleColumnVisibility(columnIndex, checkbox.checked, true);
+        });
+        // MODIFIED: Update selected count on individual checkbox change
+        tbody.querySelectorAll('.print-row-checkbox').forEach(cb => {
+            cb.addEventListener('change', () => {
+                updateToggleAllPrintButton();
+                resetUndo();
+                updateSelectedCount(); // Call the update function
+            });
+        });
+        updateBaseCheckboxesState();
+        applyFiltersAndSort();
+        updateSelectedCount(); // MODIFIED: Call initially
+
+        // --- Event Listeners ---
+        checkAllColumnsButton.addEventListener('click', () => { /* ... (Unchanged) ... */
+            columnCheckboxes.forEach(cb => { if (!cb.checked) { cb.checked = true; toggleColumnVisibility(parseInt(cb.dataset.controlsColumn), true, false); } });
+            updateBaseCheckboxesState(); resetUndo();
+        });
+        uncheckAllColumnsButton.addEventListener('click', () => { /* ... (MODIFIED: Calls updateSelectedCount) ... */
+            if (columnCheckboxes.some(cb => cb.checked && !cb.disabled) && !confirm("Are you sure? This will hide columns and uncheck all residents.")) return;
+            columnCheckboxes.forEach(cb => { if (cb.checked && !cb.disabled) { cb.checked = false; toggleColumnVisibility(parseInt(cb.dataset.controlsColumn), false, false); } });
+            tbody.querySelectorAll('.print-row-checkbox').forEach(cb => cb.checked = false);
+            updateBaseCheckboxesState(); updateToggleAllPrintButton(); resetUndo();
+            updateSelectedCount(); // Update count as all are unchecked
+        });
+
+        toggleAllPrintRowsButton.addEventListener('click', (e) => { /* ... (MODIFIED: Calls updateSelectedCount) ... */
+            e.preventDefault();
+            const action = toggleAllPrintRowsButton.dataset.nextAction;
+            const visibleRows = [];
+            tbody.querySelectorAll('tr').forEach(row => { if (window.getComputedStyle(row).display !== 'none') visibleRows.push(row); });
+            const currentState = getCurrentCheckedPks();
+            let actionTaken = false;
+            if (action === 'uncheck') {
+                if (visibleRows.some(r => r.querySelector('.print-row-checkbox:checked')) && confirm("Uncheck all visible?")) {
+                    visibleRows.forEach(row => { const cb = row.querySelector('.print-row-checkbox'); if (cb) cb.checked = false; });
+                    actionTaken = true;
+                }
+            } else {
+                visibleRows.forEach(row => { const cb = row.querySelector('.print-row-checkbox'); if (cb) cb.checked = true; });
+                actionTaken = true;
+            }
+            if (actionTaken) {
+                const newState = getCurrentCheckedPks();
+                if (JSON.stringify(currentState) !== JSON.stringify(newState)) {
+                    pushStateToHistory(currentState);
+                }
+            }
+            updateToggleAllPrintButton();
+            updateSelectedCount(); // Update count after action
+        });
+
+        undoButton.addEventListener('click', (e) => { /* ... (MODIFIED: Calls updateSelectedCount via applyState) ... */
+            e.preventDefault();
+            if (checkStateHistory.length > 0) {
+                const stateToRestore = checkStateHistory.pop();
+                applyState(stateToRestore); // This now calls updateSelectedCount
+                updateUndoButton(); updateToggleAllPrintButton();
+            }
+        });
+
+        printTableButton.addEventListener('click', () => { /* ... (Unchanged) ... */
+             const rowsToPrint = [];
+             tbody.querySelectorAll('tr').forEach(row => {
+                 const cb = row.querySelector('.print-row-checkbox');
+                 if (window.getComputedStyle(row).display !== 'none' && cb && cb.checked) {
+                    rowsToPrint.push(row);
+                 }
+             });
+
+             if(rowsToPrint.length === 0) {
+                 alert("Please select at least one resident to print.");
+                 return;
+             }
+
+             const rowsToHide = [];
+             tbody.querySelectorAll('tr').forEach(row => {
+                 if (!rowsToPrint.includes(row)) {
+                     rowsToHide.push(row);
+                 }
+             });
+
+             rowsToHide.forEach(row => { row.dataset.display = row.style.display || ''; row.style.display = 'none'; });
+             window.print();
+        });
+
+        window.onafterprint = () => { tbody.querySelectorAll('tr[data-display]').forEach(row => { row.style.display = row.dataset.display; delete row.dataset.display; }); };
+
+        tableHeaders.forEach(header => { /* ... (Unchanged) ... */
+             const headerContent = header.querySelector('.column-header-content');
+            if (!header.classList.contains('no-sort') && headerContent) {
+                headerContent.style.cursor = 'pointer';
+                headerContent.addEventListener('click', () => {
+                    if (header.style.display === 'none') return;
+                    const index = parseInt(header.dataset.columnIndex), currentOrder = header.dataset.sortOrder || 'none', newOrder = (currentOrder === 'asc') ? 'desc' : 'asc';
+                    tableHeaders.forEach(h => { h.dataset.sortOrder = 'none'; const icon = h.querySelector('.sort-icon i'); if (icon) icon.className = 'fas fa-sort'; h.querySelector('.sort-icon')?.classList.remove('active'); });
+                    header.dataset.sortOrder = newOrder; const icon = header.querySelector('.sort-icon i'); if (icon) icon.className = `fas fa-sort-${newOrder === 'asc' ? 'up' : 'down'}`; header.querySelector('.sort-icon')?.classList.add('active');
+                    applyFiltersAndSort();
+                });
+            }
+        });
+
+        filterInputs.forEach(input => { /* ... (Unchanged) ... */
+            input.addEventListener('input', () => { resetUndo(); applyFiltersAndSort(); });
+            input.addEventListener('change', () => { resetUndo(); applyFiltersAndSort(); });
+        });
+
+        exportCsvButton.addEventListener('click', exportToCsv);
+        clearFiltersButton.addEventListener('click', () => { /* ... (Unchanged) ... */
+            filterInputs.forEach(input => input.value = '');
+            resetUndo();
+            applyFiltersAndSort();
+        });
+
+        // --- Before Unload Warning Logic ---
+        window.addEventListener('beforeunload', function (event) { /* ... (Unchanged) ... */
+             const reportingTableForUnload = document.getElementById('reportingTable');
+             let anyResidentsChecked = false;
+             if (reportingTableForUnload && reportingTableForUnload.querySelector('tbody')) {
+                 reportingTableForUnload.querySelectorAll('tbody .print-row-checkbox:checked').forEach(cb => {
+                    anyResidentsChecked = true;
+                });
+             }
+             if (anyResidentsChecked) {
+                const confirmationMessage = 'Are you sure you want to leave? Your selected residents will be unchecked.';
+                event.returnValue = confirmationMessage;
+                return confirmationMessage;
+             }
+        });
+
+    }); // End of DOMContentLoaded
+    </script>
+   <script src="{% static 'residents/js/script.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+{% load static %} {# Load the static template tags #}
+<!DOCTYPE html>
+<html>
+<head>
+    {% include 'residents/html/header.html' %}
+</head>
+<body>
+    <div class="container"> {# Wrap content in a container for better layout #}
+  {% include 'residents/html/header_nav_bar.html' %}
+
+        <div class="content">
+            <div class="page-header"> {# Added a wrapper for title and print button #}
+                <h1>{{ page_title }}</h1>
+                <button id="print-details-btn" class="btn btn-print">Print Details</button> {# Added ID and classes #}
+            </div>
+
+            <div class="data">
+                <div class="resident-details"> {# This is the section we want to print #}
+                    <section class="details-section personal-info">
+                        <h2 class="section-title">Personal Information</h2>
+                        <dl class="details-list">
+                            <dt>Full Name</dt>
+                            <dd>{{ resident.full_name }}</dd>
+                            <dt>Date of Birth</dt>
+                            <dd>{{ resident.date_of_birth|date:"F d, Y" }}</dd>
+                            <dt>Gender</dt>
+                            <dd>{{ resident.gender }}</dd>
+                            <dt>Civil Status</dt>
+                            <dd>{{ resident.civil_status }}</dd>
+                            {% if resident.occupation %}
+                                <dt>Occupation</dt>
+                                <dd>{{ resident.occupation }}</dd>
+                            {% endif %}
+                        </dl>
+                    </section>
+
+                    <section class="details-section contact-info">
+                        <h2 class="section-title">Contact & Location</h2>
+                        <dl class="details-list">
+                            <dt>Address</dt>
+                            <dd>{{ resident.address }}</dd>
+                            {% if resident.contact_information %}
+                                <dt>Contact Information</dt>
+                                <dd>{{ resident.contact_information }}</dd>
+                            {% endif %}
+                        </dl>
+                    </section>
+
+                    <section class="details-section other-info">
+                        <h2 class="section-title">Other Details</h2>
+                        <dl class="details-list">
+                            <dt>Registered Voter</dt>
+                            <dd>{% if resident.voter_status %}Yes{% else %}No{% endif %}</dd>
+                            <dt>Tier</dt>
+                            <dd>{{ resident.tier }}</dd>
+                            {% if resident.notes %}
+                                <dt>Notes</dt>
+                                <dd>{{ resident.notes|linebreaksbr }}</dd>
+                            {% endif %}
+                        </dl>
+                    </section>
+
+                    <div class="actions-panel">
+                        <a href="{% url 'edit_resident' resident.pk %}?next={{ request.get_full_path|urlencode }}" class="btn btn-edit">Edit Resident</a>
+                        <a href="{% url 'delete_resident' resident.pk %}?next={{ request.get_full_path|urlencode }}" class="btn btn-delete">Delete Resident</a>
+                        <a href="{% url 'index' %}" class="btn btn-back">Back to Residents List</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Your JavaScript for hamburger menu (if any) should be here or in an external file #}
+    <script>
+        // Hamburger Menu Script (from previous example)
+        document.addEventListener('DOMContentLoaded', function() {
+            const hamburger = document.getElementById('hamburger-icon');
+            const navLinks = document.getElementById('navbar-links');
+
+            if (hamburger && navLinks) {
+                hamburger.addEventListener('click', function() {
+                    const isActive = navLinks.classList.toggle('active');
+                    hamburger.setAttribute('aria-expanded', isActive);
+                    const icon = hamburger.querySelector('i');
+                    if (isActive) {
+                        icon.classList.remove('fa-bars');
+                        icon.classList.add('fa-times');
+                    } else {
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    }
+                });
+            }
+
+            // Print Button Functionality
+            const printButton = document.getElementById('print-details-btn');
+            if (printButton) {
+                printButton.addEventListener('click', function() {
+                    window.print(); // Triggers the browser's print dialog
+                });
+            }
+        });
+    </script>
+</body>
+</html>
