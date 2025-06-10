@@ -15,7 +15,7 @@ def create_superuser(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('residents', '0012_initial'), # Make sure this matches your PREVIOUS migration file
+        ('residents', '0013_initial'), # Make sure this matches your PREVIOUS migration file
     ]
 
     operations = [
