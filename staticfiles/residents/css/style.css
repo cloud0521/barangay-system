@@ -1,0 +1,813 @@
+/* residents/static/residents/style.css */
+
+/* General body styling */
+body {
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    margin: 0; /* Remove default body margin */
+    padding: 0; /* Remove body padding if navbar spans full width */
+    background-color: #eef2f7; /* Light background color */
+    color: #333;
+}
+
+.container {
+    max-width: 90%; /* Limit content width */
+    height: auto;
+    margin: 0 auto; /* Center the container */
+    background-color: #fff; /* White background for content */
+    padding: 15px; /* Retained from original .container */
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+
+.content {
+    width: 100%; /* Limit content width */
+    margin: 20px 0;
+    padding-bottom: 20px;
+    background-color: #e2dede; /* White background for content */
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+.content .data {
+    width: auto;
+    padding-left: 10px;
+    padding-right: 0;
+    padding-bottom: 10px;
+}
+.content .data a {
+    border-radius: 10px;
+    color: white;
+    width: 100%;
+    padding: 10px;
+    background-color: #699deb;
+    text-decoration: none;
+    border: 1px solid black;
+}
+.content .data button.warning {
+    border-radius: 10px;
+    color: white;
+    padding: 10px;
+    background-color: #ee2922;
+}
+.content .data a:hover {
+    background-color: #305285;
+}
+.content .data h2 {
+    font-size: 22px;
+}
+.content .data dt {
+    font-weight: 200;
+    font-size: 20px;
+}
+.details-list dt::after {
+    content: ":";
+    font-weight: bold;
+    margin-left: 4px; /* Optional: adjust spacing */
+}
+
+.navbar {
+    background-color: #bebebe; /* Example background color */
+    box-shadow: 5px 5px 5px rgb(0, 0, 0, .5);
+    height: 60px;
+    display: flex; /* Helps align items if you add a logo/brand */
+    justify-content: space-between; /* Example: Pushes logo to left, links/hamburger to right */
+    align-items: center;
+    position: relative; /* Crucial for positioning the dropdown menu */
+}
+
+.navbar ul#navbar-links {
+    height: 100%;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex; /* Arrange links horizontally on desktop */
+}
+
+.navbar ul#navbar-links li {
+    background-color: #bebebe; /* Example background color */
+    height: 100%;
+}
+
+.navbar ul#navbar-links li:hover {
+    background-color: #929191;
+}
+
+.navbar ul#navbar-links li a {
+    padding: 0 30px;
+    height: 100%;
+    width: auto;
+    text-decoration: none;
+    color: #333; /* Link color */
+    display: block;
+    /* Flex properties for vertical centering if needed */
+    display: flex; /* Changed to flex for centering */
+    justify-content: center;
+    align-items: center; /* Vertically center text */
+}
+
+.navbar ul#navbar-links li a.active {
+    color: #ffffff; /* Active link color */
+    background-color: #929191;
+}
+
+
+.navbar ul#navbar-links li form
+{
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+    align-content: center;
+    
+    .logout-button
+    {
+        border-radius: 5px;
+        padding: 10px;
+    }
+    .logout-button:hover
+    {
+        border-radius: 5px;
+        padding: 10px;
+        background-color: #bebebe;
+        border-color: white;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+.hamburger-icon {
+    display: none; /* Hidden on larger screens */
+    margin-left: 10px;
+    background: none;
+    border: none;
+    font-size: 1.8em; /* Adjust icon size */
+    color: #333; /* Icon color */
+    cursor: pointer;
+    padding: 5px; /* Make it easier to tap */
+}
+
+
+
+
+
+h1 {
+  font-family: 'Poppins', sans-serif; /* A friendly, modern font */
+  padding: 0 10px;
+  font-size: 2.2em;
+  font-weight: 700; /* Bold */
+  margin: auto; /* This might be too aggressive for centering, consider text-align on parent */
+  background: linear-gradient(45deg, #0a0909, #2F4F4F, #008080); /* Example gradient */
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text; 
+}
+
+.search-form {
+    display: flex; 
+    gap: 10px; 
+    padding: 0 10px;
+}
+.search-form input[type="text"] {
+    padding: 10px; 
+    border: 1px solid #cbd5e0; 
+    border-radius: 4px; 
+    flex-grow: 1; 
+    font-size: 1rem; 
+}
+.search-form input[type="submit"] {
+    padding: 10px; 
+    border: 1px solid #cbd5e0; 
+    border-radius: 4px; 
+    color: white;
+    background-color: #3182ce;
+    width: 100px; 
+    font-size: 1rem; 
+}
+.search-form input[type="submit"]:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); 
+    cursor: pointer;
+}
+.search-form button {
+    padding: 10px 20px; 
+    background-color: #4299e1; 
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease; 
+    font-size: 1rem; 
+}
+.search-form button:hover {
+    background-color: #3182ce; 
+}
+
+.add-resident-link {
+    display: inline-block;
+    padding: 0 10px;
+    margin-bottom: 20px; 
+    font-size: 1.1rem; 
+    color: #0d6e35; 
+    text-decoration: none;
+}
+.add-resident-link:hover {
+    text-decoration: underline; 
+}
+
+#residents-list-container {
+    width: 100%;
+}
+
+#residents-list-container table { 
+    width: 99%;
+    border-collapse: collapse;
+    margin:0 auto;
+}
+
+#residents-list-container th,
+#residents-list-container td {
+    border: 1px solid #e2e8f0; 
+    padding: 12px; 
+    text-align: left; 
+}
+
+#residents-list-container th {
+    background-color: #ebf8ff; 
+    font-weight: bold;
+    color: #2d3748; 
+}
+
+#residents-list-container tr:nth-child(even) {
+    background-color: #f7fafc; 
+}
+
+#residents-list-container tr:hover {
+    background-color: #e2e8f0; 
+}
+
+#residents-list-container td a {
+    text-decoration: none;
+    color: #4299e1; 
+    font-weight: normal; 
+}
+
+#residents-list-container td a:hover {
+    text-decoration: underline;
+}
+
+/* --- Styles for column widths (Tier & Action in #residents-list-container table) --- */
+#residents-list-container th:nth-child(3), /* Tier */
+#residents-list-container td:nth-child(3),
+#residents-list-container th:nth-child(4), /* Action */
+#residents-list-container td:nth-child(4) {
+    white-space: nowrap;
+    text-align: center;
+    width: 80px; /* Fixed width */
+}
+
+.resident-actions { 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px; 
+}
+
+.resident-actions a { 
+    text-decoration: none;
+    display: inline-block;
+    padding: 0 5px; 
+    color: #e53e3e; 
+}
+
+.resident-actions a:first-child { 
+    color: #f6e05e; 
+}
+.resident-actions a:hover {
+    opacity: 0.7; 
+}
+
+#residents-list-container p {
+    text-align: center;
+    font-style: italic;
+    color: #718096; 
+    margin-top: 20px;
+}
+
+.btn-print{
+    background-color: rgb(196, 193, 193);
+    width: 100px;
+    border-radius: 10px;
+    padding: 10px;
+    margin-left: 10px;
+}
+
+/* --- Styles for Reporting Table (#reportingTable) --- */
+.filter-input {
+    width: 90%; 
+    padding: 4px 6px;
+    margin-top: 5px;
+    box-sizing: border-box;
+    font-size: 0.9em;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+/* TH in general, if not overridden by #reportingTable th */
+/* This 'th' rule is very general. If it's meant only for reportingTable, scope it or ensure it doesn't conflict. */
+/* For now, assuming it's general or will be overridden by more specific #reportingTable th */
+th { 
+    vertical-align: top; 
+}
+
+.column-header-content {
+    display: inline-flex; 
+    align-items: center;
+    cursor: pointer;
+    user-select: none; 
+}
+
+.sort-icon {
+    margin-right: 6px;
+    color: #888; 
+    width: 1em; 
+    text-align: center;
+}
+
+.sort-icon.active {
+    color: #007bff; 
+}
+
+#reportingTable {
+    width: 100%;
+    border-collapse: collapse; 
+    margin-top: 10px; 
+    table-layout: fixed; 
+}
+
+#reportingTable th,
+#reportingTable td {
+    border: 1px solid #ddd; 
+    padding: 8px;
+    text-align: left;
+    word-wrap: break-word; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+}
+
+#reportingTable th {
+    background-color: #f8f9fa; 
+}
+
+/* --- CSS to Adjust Individual TH Widths for #reportingTable --- */
+#reportingTable th[data-column-name="Print?"] {
+    width: 3%;
+}
+#reportingTable th[data-column-name="Full Name"] {
+    width: 15%; 
+}
+#reportingTable th[data-column-name="Age"] {
+    width: 5%;
+}
+#reportingTable th[data-column-name="Gender"] {
+    width: 6%;
+}
+#reportingTable th[data-column-name="Purok"] {
+    width: 7%;
+}
+#reportingTable th[data-column-name="Religion"] {
+    width: 7%;
+}
+#reportingTable th[data-column-name="Email Address"] {
+    width: 10%;
+}
+#reportingTable th[data-column-name="Nationality"] {
+    width: 7%;
+}
+#reportingTable th[data-column-name="Civil Status"] {
+    width: 7%;
+}
+#reportingTable th[data-column-name="Occupation"] {
+    width: 8%;
+}
+#reportingTable th[data-column-name="Contact Information"] {
+    width: 7%;
+}
+#reportingTable th[data-column-name="Address"] {
+    width: 25%; 
+}
+#reportingTable th[data-column-name="Place of Birth"] {
+    width: 8%;
+}
+#reportingTable th[data-column-name="Notes"] {
+    width: 10%;
+}
+#reportingTable th[data-column-name="Voter Status"] {
+    width: 6%;
+}
+#reportingTable th[data-column-name="Tier"] {
+    width: 3%;
+    justify-content: center;
+    align-content: center;
+}
+/* --- End of Individual TH Width Adjustments for #reportingTable --- */
+
+/* Column Toggler Styles for Reporting Table */
+#controlsContainer { 
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+}
+
+#columnToggleContainer {
+    margin-bottom: 10px; 
+}
+
+#columnToggleContainer label {
+    display: inline-block;
+    margin-right: 15px;
+    font-size: 0.9em;
+    cursor: pointer;
+}
+
+#columnToggleContainer input[type="checkbox"] {
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+.toggle-all-buttons button {
+    padding: 6px 12px;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+    margin-right: 5px;
+}
+
+.toggle-all-buttons button:hover {
+    background-color: #5a6268;
+}
+
+#printTableButton {
+    padding: 8px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-top: 10px;
+    display: block; 
+}
+
+#printTableButton:hover {
+    background-color: #0056b3;
+}
+/* --- End of Reporting Table Styles --- */
+
+
+/* --- Styles for Forms (e.g., add_resident.html, edit_resident.html) --- */
+.form-container {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    padding: 10px 0;
+}
+
+.form-container form {
+    margin: 0;
+    padding: 0px 30px;
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Default for larger screens */
+    grid-template-rows: auto; /* Let rows size automatically */
+    gap: 0 35px; /* row-gap column-gap */
+}
+.form-container form p { 
+    margin: 5px; 
+}
+.form-container form label {
+    display: block;
+    margin-bottom: 0; 
+    font-weight: bold;
+    color: #2d3748;
+    font-size: 14px;
+}
+.form-container form input[type="text"],
+.form-container form input[type="date"],
+.form-container form input[type="email"], 
+.form-container form input[type="password"],
+.form-container form input[type="number"],
+.form-container form textarea,
+.form-container form select {
+    width: 100%;
+    padding: 8px; 
+    border: 1px solid #cbd5e0;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+    margin-bottom: -20px; /* This might cause overlap, check layout */
+}
+
+.form-container form textarea {
+    max-height: 60px;
+    min-height: 40px; 
+    resize: vertical;
+}
+
+.form-container form input[type="checkbox"] {
+    margin-right: 8px;
+    vertical-align: middle;
+    width: 38px; 
+    height: 38px;
+}
+
+.form-container form .submit-button-container, 
+.form-container form button[type="submit"] {
+    grid-column: 1 / -1; 
+}
+
+.form-container button[type="submit"] { 
+    padding: 12px 20px;
+    background-color: #48bb78; 
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: background-color 0.3s ease;
+    margin-top: 20px; 
+    width: 100%; 
+}
+
+.form-container button[type="submit"]:hover {
+    background-color: #38a169; 
+}
+
+.back-link {
+    display: block;
+    text-align: center;
+    margin-top: 20px;
+    color: #4299e1; 
+    text-decoration: none;
+    font-size: 1rem;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+.spanned-item {
+    grid-column: span 2;
+    background-color: lightgreen; 
+}
+
+
+
+#reportingTable td.cell-print-checkbox {
+    text-align: center; /* Center the checkbox */
+}
+#reportingTable th[data-column-name="Print?"] {
+    width: 5%; /* Adjust width as needed */
+    text-align: center;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* For smaller screens, stack form elements */
+@media (max-width: 768px) {
+    body * {
+        font-size: 10px;
+        /* Keep visibility for reporting table area, overridden below */
+    }
+    /* Ensure rows hidden by JS for printing stay hidden */
+    /* This selector might be redundant if JS directly sets display: none, 
+       but it's a good fallback. */
+    #reportingTable tbody tr.exclude-from-print-js {
+         display: none !important;
+    }
+    /* If JS is setting inline style display:none, that will take precedence.
+       The existing rule for #reportingTable tr td should handle padding.
+       The rule below ensures the entire row is hidden if its display is set to none.
+    */
+    #reportingTable tbody tr[style*="display: none"] {
+        display: none !important;
+    }
+    #reportingActions button
+    {
+        padding: 5px;
+        margin: 2px;
+    }
+
+
+    .form-container form {
+        grid-template-columns: 1fr; /* Single column */
+    }
+
+    .navbar ul#navbar-links {
+        display: none; 
+        flex-direction: column; 
+        width: 100%;
+        position: absolute;
+        top: 100%; 
+        left: 0;
+        background-color: #fff; 
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1); 
+        z-index: 1000; 
+    }
+
+    .navbar ul#navbar-links.active {
+        display: flex; 
+    }
+
+    .navbar ul#navbar-links li {
+        margin-left: 0; 
+        width: 100%;
+        background-color: rgb(161, 161, 161);
+    }
+
+    .navbar ul#navbar-links li a {
+        padding: 0 20px; 
+        text-align: left; 
+        border-bottom: 1px solid #f0f0f0; 
+        height: 50px;
+        /* justify-content: center; Removed as text-align:left is used */
+        /* align-content: center; Removed as text-align:left is used */
+        display: flex; /* Added back to use align-items */
+        align-items: center; /* Vertically center text */
+    }
+
+    .navbar ul#navbar-links li:last-child a {
+        border-bottom: none; 
+    }
+
+    .hamburger-icon {
+        display: block;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Print-specific styles */
+@media print {
+    /* General reset for print */
+    body * {
+        background: transparent !important;
+        color: #000 !important; 
+        box-shadow: none !important;
+        text-shadow: none !important;
+        border-color: #ccc !important; 
+        font-size: 11px;
+        /* Keep visibility for reporting table area, overridden below */
+    }
+    h2{
+        display: none !important;
+    }
+
+    #printableTableArea, #printableTableArea * {
+        visibility: visible !important; /* Ensure this area is always visible for print */
+    }
+     #printableTableArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+
+    /* Hide elements not intended for printing */
+    .navbar,
+    .hamburger-icon,
+    #print-details-btn,     
+    .actions-panel,         
+    script,
+    .no-print, /* General class for non-printable elements like controlsContainer */
+    #controlsContainer, /* Explicitly hide controls container */
+    .non-printable { /* Another common class for non-printable */
+        display: none !important;
+    }
+    
+    #reportingTable th .filter-input,
+    #reportingTable th .sort-icon {
+        display: none !important;
+    }
+    #reportingTable th[style*="display: none"], /* Respect user hidden columns */
+    #reportingTable td[style*="display: none"] {
+        display: none !important;
+    }
+    
+    #reportingTable tr td{
+        margin: 0;
+        padding: 2px 5px;
+    }
+
+
+    .container, .content, .data {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: none !important;
+    }
+
+    .page-header { 
+        padding-bottom: 0;
+        margin-bottom: 0; 
+        border-bottom: 2px solid #000; 
+    }
+
+    .page-header h1 {
+        display: block !important; 
+        text-align: center;
+        font-size: 18pt; 
+        margin: 0;
+        padding: 0;
+         /* Ensure h1 text is black for print, overriding gradient */
+        background: none !important;
+        -webkit-text-fill-color: #000 !important;
+        color: #000 !important;
+    }
+
+    .resident-details {
+        margin: 0;
+        padding: 0;
+        border: none;
+    }
+
+    .details-section {
+        margin-bottom: 0.3in; 
+        page-break-inside: avoid; 
+    }
+
+    .section-title {
+        font-size: 14pt;
+        border-bottom: 1px solid #999;
+        padding-bottom: 3px;
+        margin-top: 0;
+        margin-bottom: 0.2in;
+    }
+
+    .details-list {
+        font-size: 11pt; 
+        line-height: 1.4;
+    }
+
+    .details-list dt {
+        font-weight: bold;
+        margin-top: 0.1in; 
+    }
+
+    .details-list dt::after { 
+        content: ":";
+    }
+
+    .details-list dd {
+        margin-left: 0; 
+        margin-bottom: 0.1in; 
+        padding-left: 0.2in; 
+    }
+
+    a, a:visited {
+        text-decoration: none; 
+        color: #000 !important; 
+    }
+
+    /*
+    a[href]::after {
+        content: " (" attr(href) ")";
+        font-size: 90%;
+        color: #555 !important;
+    }
+    */
+}

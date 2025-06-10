@@ -139,7 +139,13 @@ class Official(models.Model):
     # Define choices for common barangay positions
     POSITION_CHOICES = [
         ('PUNONG_BARANGAY', 'Punong Barangay (Barangay Captain)'),
-        ('BARANGAY_KAGAWAD', 'Barangay Kagawad (Barangay Councilor)'),
+        ('BARANGAY_KAGAWAD_1', 'Barangay Kagawad 1(Barangay Councilor)'),
+        ('BARANGAY_KAGAWAD_2', 'Barangay Kagawad 2(Barangay Councilor)'),
+        ('BARANGAY_KAGAWAD_3', 'Barangay Kagawad 3(Barangay Councilor)'),
+        ('BARANGAY_KAGAWAD_4', 'Barangay Kagawad 4(Barangay Councilor)'),
+        ('BARANGAY_KAGAWAD_5', 'Barangay Kagawad 5(Barangay Councilor)'),
+        ('BARANGAY_KAGAWAD_6', 'Barangay Kagawad 6(Barangay Councilor)'),
+        ('BARANGAY_KAGAWAD_7', 'Barangay Kagawad 7(Barangay Councilor)'),
         ('SK_CHAIRMAN', 'SK Chairman (Sangguniang Kabataan Chairman)'),
         ('BARANGAY_SECRETARY', 'Barangay Secretary'),
         ('BARANGAY_TREASURER', 'Barangay Treasurer'),
