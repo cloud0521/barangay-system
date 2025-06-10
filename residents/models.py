@@ -146,6 +146,7 @@ class Official(models.Model):
         ('BARANGAY_KAGAWAD_5', 'Barangay Kagawad 5(Barangay Councilor)'),
         ('BARANGAY_KAGAWAD_6', 'Barangay Kagawad 6(Barangay Councilor)'),
         ('BARANGAY_KAGAWAD_7', 'Barangay Kagawad 7(Barangay Councilor)'),
+        ('BARANGAY_KAGAWAD_8', 'Barangay Kagawad 8(Barangay Councilor)'),
         ('SK_CHAIRMAN', 'SK Chairman (Sangguniang Kabataan Chairman)'),
         ('BARANGAY_SECRETARY', 'Barangay Secretary'),
         ('BARANGAY_TREASURER', 'Barangay Treasurer'),
