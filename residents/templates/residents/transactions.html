@@ -64,7 +64,7 @@
         .document-paper .editable-in-preview:hover { background-color: #eef !important; cursor: pointer !important; border-bottom: 1px solid #007bff !important; }
         
         .certificate-footer {background-color: rgb(255, 255, 255);}
-        .certificate-footer .signature { float: right; width:; text-align: center; margin-top: 8px; }
+        .certificate-footer .signature { float: right; text-align: center; margin-top: 8px; }
         .signature strong.pbSignatureName {display: block; margin:0; border-top: 1px solid black; padding: 0;}
         .certificate-footer::after { content: ""; display: table; clear: both; }
 
@@ -724,82 +724,95 @@ function setDynamicText(selectorOrElement, text, placeholderText = "") {
         spanElement.dataset.clickHandlerAttached = 'true';
     }
     
-    function fetchAndPopulateOfficials() {
-        console.log("Fetching officials from:", officialsApiUrl);
-        fetch(officialsApiUrl)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Network response was not ok: ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log("Officials data received:", data);
-                const pbNameEl = document.getElementById('leftnav_pb_name');
-                const pbSignatureNameEl = document.getElementById('pbSignatureName'); 
-                
-                const formattedPBName = formatOfficialName(data.punong_barangay_name || '[Punong Barangay Name]');
-                if (pbNameEl) {
-                    pbNameEl.textContent = 'Hon. ' + formattedPBName;
-                }
-                if (pbSignatureNameEl) { 
-                    pbSignatureNameEl.textContent = 'Hon. ' + formattedPBName;
-                }
+   function fetchAndPopulateOfficials() {
+    console.log("Fetching officials from:", officialsApiUrl);
+    fetch(officialsApiUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Network response was not ok: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("Officials data received:", data);
 
-                const kagawadsContainer = document.getElementById('leftnav_kagawads_container');
-                if (kagawadsContainer) {
-                    kagawadsContainer.innerHTML = ''; 
-                    if (data.kagawad_names && data.kagawad_names.length > 0) {
-                        data.kagawad_names.forEach(name => {
-                            const nameP = document.createElement('p');
-                            nameP.style.cssText = "margin:0; text-decoration: underline; text-spacing:1px; text-underline-offset: 2px; font-weight:bold;";
-                            nameP.textContent = 'Hon. ' + formatOfficialName(name); 
+            // --- Define a map for position display names ---
+            const positionDisplayMap = {
+                'PUNONG_BARANGAY': 'Punong Barangay',
+                'BARANGAY_KAGAWAD_1': 'Brgy. Kagawad', // Generic title for all
+                'BARANGAY_KAGAWAD_2': 'Brgy. Kagawad',
+                'BARANGAY_KAGAWAD_3': 'Brgy. Kagawad',
+                'BARANGAY_KAGAWAD_4': 'Brgy. Kagawad',
+                'BARANGAY_KAGAWAD_5': 'Brgy. Kagawad',
+                'BARANGAY_KAGAWAD_6': 'Brgy. Kagawad',
+                'BARANGAY_KAGAWAD_7': 'Brgy. Kagawad',
+                'SK_CHAIRMAN': 'SK Chairwoman',
+                'BARANGAY_TREASURER': 'Treasurer',
+                'BARANGAY_SECRETARY': 'Secretary'
+            };
 
-                            const titleP = document.createElement('p');
-                            titleP.style.cssText = "margin: 0 0 15px 0; font-size:1em; color:rgb(38, 134, 243); font-weight: bold;";
-                            titleP.className = 'pos';
-                            titleP.textContent = 'Brgy. Kagawad';
-
-                            kagawadsContainer.appendChild(nameP);
-                            kagawadsContainer.appendChild(titleP);
-                        });
-                    } else { 
-                        const placeholderP = document.createElement('p');
-                        placeholderP.style.cssText = "margin:0;";
-                        placeholderP.textContent = "[No Active Kagawads]";
-                            const titleP = document.createElement('p');
-                        titleP.style.cssText = "margin:0 0 15px 0; font-size:0.9em; color:rgb(38, 134, 243); font-weight: bold;";
-                        titleP.textContent = 'Brgy. Kagawad';
-                        kagawadsContainer.appendChild(placeholderP);
-                        kagawadsContainer.appendChild(titleP);
-                    }
-                }
-
-                const skNameEl = document.getElementById('leftnav_sk_name');
-                if (skNameEl) {
-                    skNameEl.textContent = 'Hon. ' + formatOfficialName(data.sk_chairman_name || '[SK Chairwoman Name]');
-                }
-
-                const tresNameEl = document.getElementById('leftnav_tres_name');
-                if (tresNameEl) {
-                    tresNameEl.textContent = formatOfficialName(data.treasurer_name || '[Treasurer Name]');
-                }
-
-                const secNameEl = document.getElementById('leftnav_sec_name');
-                if (secNameEl) {
-                    secNameEl.textContent = formatOfficialName(data.secretary_name || '[Secretary Name]');
-                }
-            })
-            .catch(error => {
-                console.error('Failed to fetch barangay officials:', error);
-                // Fallback to context variable if API fails for PB, if desired, or keep placeholder
-                 const pbNameEl = document.getElementById('leftnav_pb_name');
-                 const pbSignatureNameEl = document.getElementById('pbSignatureName');
-                 const formattedPBName = formatOfficialName(barangayCaptainName || '[Punong Barangay Name]'); // Use JS global if API fails
-                 if(pbNameEl) pbNameEl.textContent = 'Hon. ' + formattedPBName;
-                 if(pbSignatureNameEl) pbSignatureNameEl.textContent = formattedPBName.toUpperCase();
+            // --- Handle Punong Barangay ---
+            const pbNameEl = document.getElementById('leftnav_pb_name');
+            const pbSignatureNameEl = document.getElementById('pbSignatureName');
+            const formattedPBName = formatOfficialName(data.punong_barangay_name || '[Punong Barangay Name]');
+            if (pbNameEl) {
+                pbNameEl.textContent = 'Hon. ' + formattedPBName;
+            }
+            // Update all elements with the signature name class
+            document.querySelectorAll('.pbSignatureName').forEach(el => {
+                el.textContent = 'Hon. ' + formattedPBName.toUpperCase();
             });
-    }
+
+
+            // --- Handle SORTED Kagawads ---
+            const kagawadsContainer = document.getElementById('leftnav_kagawads_container');
+            if (kagawadsContainer) {
+                kagawadsContainer.innerHTML = ''; // Clear previous entries
+                // The data.kagawads from the API is now a SORTED list of objects
+                if (data.kagawads && data.kagawads.length > 0) {
+                    data.kagawads.forEach(kagawad => {
+                        const nameP = document.createElement('p');
+                        nameP.style.cssText = "margin:0; text-decoration: underline; text-underline-offset: 2px; font-weight:bold;";
+                        nameP.textContent = 'Hon. ' + formatOfficialName(kagawad.full_name);
+
+                        const titleP = document.createElement('p');
+                        titleP.style.cssText = "margin: 0 0 15px 0; font-size:1em; color:rgb(38, 134, 243); font-weight: bold;";
+                        titleP.className = 'pos';
+                        // Use the generic title for all Kagawads
+                        titleP.textContent = positionDisplayMap[kagawad.position] || 'Brgy. Kagawad';
+
+                        kagawadsContainer.appendChild(nameP);
+                        kagawadsContainer.appendChild(titleP);
+                    });
+                } else {
+                    // Placeholder if no kagawads are found
+                    const placeholderP = document.createElement('p');
+                    placeholderP.textContent = "[No Active Kagawads]";
+                    kagawadsContainer.appendChild(placeholderP);
+                }
+            }
+
+            // --- Handle Other Officials ---
+            const skNameEl = document.getElementById('leftnav_sk_name');
+            if (skNameEl) {
+                skNameEl.textContent = 'Hon. ' + formatOfficialName(data.sk_chairman_name || '[SK Chairwoman Name]');
+            }
+
+            const tresNameEl = document.getElementById('leftnav_tres_name');
+            if (tresNameEl) {
+                tresNameEl.textContent = formatOfficialName(data.treasurer_name || '[Treasurer Name]');
+            }
+
+            const secNameEl = document.getElementById('leftnav_sec_name');
+            if (secNameEl) {
+                secNameEl.textContent = formatOfficialName(data.secretary_name || '[Secretary Name]');
+            }
+        })
+        .catch(error => {
+            console.error('Failed to fetch barangay officials:', error);
+            // Optional: Add fallback display logic here if the API fails
+        });
+}
 
     transactionButtons.forEach(button => {
         button.addEventListener('click', function() {

@@ -15,49 +15,39 @@ from django.views.decorators.http import require_http_methods
 from django.conf import settings # For accessing settings if you choose Option 2
 
 
+@login_required
 def get_barangay_officials_api(request):
     """
-    API view to fetch active barangay officials.
-    Returns a list of all active Kagawads.
+    API view to fetch active barangay officials, now providing sorted Kagawads.
     """
-    officials_data = {
-        'punong_barangay_name': '[Punong Barangay Name]', # Default if not found
-        'kagawad_names': [],
-        'sk_chairman_name': '[SK Chairwoman Name]', # Default if not found
-        'treasurer_name': '[Treasurer Name]', # Default if not found
-        'secretary_name': '[Secretary Name]'  # Default if not found
-    }
-
-    single_role_positions = [
-        'PUNONG_BARANGAY',
-        'SK_CHAIRMAN',
-        'BARANGAY_TREASURER',
-        'BARANGAY_SECRETARY',
-    ]
-
-    active_officials = Official.objects.filter(
-        is_active=True,
-        position__in=single_role_positions + ['BARANGAY_KAGAWAD']
-    ).order_by('full_name') # Consider adding specific ordering logic if needed
-
-    temp_kagawads = []
-
-    for official in active_officials:
-        name_upper = official.full_name.upper() if official.full_name else "" # Handle potential None
-        if official.position == 'PUNONG_BARANGAY' and officials_data['punong_barangay_name'] == '[Punong Barangay Name]': # Take the first one if multiple (should not happen)
-            officials_data['punong_barangay_name'] = name_upper
-        elif official.position == 'BARANGAY_KAGAWAD':
-            temp_kagawads.append(name_upper)
-        elif official.position == 'SK_CHAIRMAN' and officials_data['sk_chairman_name'] == '[SK Chairwoman Name]':
-            officials_data['sk_chairman_name'] = name_upper
-        elif official.position == 'BARANGAY_TREASURER' and officials_data['treasurer_name'] == '[Treasurer Name]':
-            officials_data['treasurer_name'] = name_upper
-        elif official.position == 'BARANGAY_SECRETARY' and officials_data['secretary_name'] == '[Secretary Name]':
-            officials_data['secretary_name'] = name_upper
+    # Fetch the active Punong Barangay
+    punong_barangay = Official.objects.filter(position='PUNONG_BARANGAY', is_active=True).first()
     
-    officials_data['kagawad_names'] = temp_kagawads # Assign collected Kagawads
+    # Fetch all active Kagawads, getting both their name and specific position
+    kagawads = Official.objects.filter(
+        position__startswith='BARANGAY_KAGAWAD_',  # Notice the underscore to get _1, _2, etc.
+        is_active=True
+    ).values('full_name', 'position') # Fetch as a dictionary
 
-    return JsonResponse(officials_data)
+    # Fetch other active officials
+    sk_chairman = Official.objects.filter(position='SK_CHAIRMAN', is_active=True).first()
+    treasurer = Official.objects.filter(position='BARANGAY_TREASURER', is_active=True).first()
+    secretary = Official.objects.filter(position='BARANGAY_SECRETARY', is_active=True).first()
+
+    # Prepare the data for the JSON response
+    data = {
+        'punong_barangay_name': punong_barangay.full_name if punong_barangay else '[Punong Barangay Name]',
+        
+        # KEY CHANGE: Sort the list of kagawad dictionaries by their 'position' key
+        # and pass this structured list to the frontend.
+        'kagawads': sorted(list(kagawads), key=lambda k: k['position']),
+        
+        'sk_chairman_name': sk_chairman.full_name if sk_chairman else '[SK Chairwoman Name]',
+        'treasurer_name': treasurer.full_name if treasurer else '[Treasurer Name]',
+        'secretary_name': secretary.full_name if secretary else '[Secretary Name]',
+    }
+    
+    return JsonResponse(data)
 
 
 @login_required
