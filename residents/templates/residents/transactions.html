@@ -59,7 +59,7 @@
     background-repeat: no-repeat;
     background-size: 700px;  /* Options: 'contain', 'cover', or a size like '400px' */
     opacity: 0.1; /* Controls how faint the image is (0.05 to 0.2 is common) */
-    z-index: 0;  /* This is the magic that pushes the image behind the text content */
+    z-index: -1;  /* This is the magic that pushes the image behind the text content */
 }
 
         .certificate-header { text-align: center; margin:0; }
@@ -71,7 +71,7 @@
         .certificate-header hr { margin: 20px 0 5px 0; border-top: 1px solid rgb(100, 100, 100); padding: 0;}
         .certificate-header h2.office-text { margin: 10px 0; font-weight: bold; color: #333; font-size: 1.2em; font-variant: small-caps;}
         
-        .certificate-body {background-color:transparent; margin: 0;}
+        .certificate-body {background-color:transparent; margin: 0; z-index: 2;}
         .clearance_body .leftnav .pos{ margin: 0 0 15px 0; font-size:1em; color:rgb(38, 134, 243); font-weight: bold;}
         .certificate-title { text-align: center; margin: 30px 0 50px 0; font-size: 1.8em; letter-spacing: 1px; font-weight: bold; font-family: Arial, Helvetica, sans-serif;}
         .certificate-body h4 { margin-bottom: 15px; font-weight: normal; text-align: left; }
@@ -114,7 +114,7 @@
         -webkit-print-color-adjust: exact; /* For Chrome, Safari, Edge */
         print-color-adjust: exact;  
                         }
-            .document-paper::before {top: 85px;}  /* this is added */
+            .document-paper::before {top: 85px; z-index: 0;}  /* this is added */
             .certificate-title { font-size: 1.8em !important;}
             .certificate-body p { font-size: 12pt !important; line-height: 1.2em !important; }
             .certificate-body .leftnav { font-size: 12pt !important; line-height: 1.2em !important; }
